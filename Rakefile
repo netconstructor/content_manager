@@ -9,7 +9,7 @@ begin
     gem.email = "syates@grandcentralmedia.com.au"
     gem.homepage = "http://github.com/sethyates/content_manager"
     gem.authors = ["Seth Yates"]
-    # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
+    gem.add_dependency('rufus-tokyo', '>= 0.1.12')
   end
 
 rescue LoadError

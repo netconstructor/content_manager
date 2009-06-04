@@ -1,7 +1,9 @@
-= content_manager
+= Content Manager
 
 Description goes here.
 
 == Copyright
 
-Copyright (c) 2009 Seth Yates. See LICENSE for details.
+Copyright (c) 2009 Seth Yates
+Copyright (c) 2009 Independent Digital Media Pty Ltd
+See LICENSE for details.
