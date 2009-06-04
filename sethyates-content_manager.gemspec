@@ -19,12 +19,12 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
-     "content_manager.gemspec",
      "init.rb",
      "lib/content_helper.rb",
      "lib/content_item.rb",
      "lib/rack/content_manager.rb",
      "rails/init.rb",
+     "sethyates-content_manager.gemspec",
      "test/content_manager_test.rb",
      "test/test_helper.rb"
   ]
