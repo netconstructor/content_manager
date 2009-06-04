@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
      "README.rdoc",
      "Rakefile",
      "VERSION",
+     "content_manager.gemspec",
      "init.rb",
      "lib/content_helper.rb",
      "lib/content_item.rb",
