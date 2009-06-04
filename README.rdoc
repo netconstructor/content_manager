@@ -1,6 +1,6 @@
 = Content Manager
 
-Description goes here.
+A simple content manager.  Currently prototype code.  Use at your own risk.
 
 == Copyright
 
