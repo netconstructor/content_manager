@@ -1,0 +1,7 @@
+= content_manager
+
+Description goes here.
+
+== Copyright
+
+Copyright (c) 2009 Seth Yates. See LICENSE for details.
