@@ -4,7 +4,7 @@ require 'rake'
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
-    gem.name = "content_manager"
+    gem.name = "sethyates-content_manager"
     gem.summary = %Q{Simple Content Manager}
     gem.email = "syates@grandcentralmedia.com.au"
     gem.homepage = "http://github.com/sethyates/content_manager"
