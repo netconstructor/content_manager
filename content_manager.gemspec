@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{content_manager}
-  s.version = "0.2.0"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Seth Yates"]
@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
      "init.rb",
      "lib/content_helper.rb",
      "lib/content_item.rb",
+     "lib/content_manager.rb",
      "lib/rack/content_manager.rb",
      "rails/init.rb",
      "test/content_manager_test.rb",

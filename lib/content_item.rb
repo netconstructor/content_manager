@@ -36,15 +36,17 @@ class ContentItem
     }
   end
 
-  def self.polymorphic_finder(name, *arguments)
-    wrap_result(connection.query {|q| q.add_condition name.to_s, :eq, arguments.first.to_s })
+  def self.polymorphic_finder(which, name, *arguments)
+    hash = (connection.query {|q| q.add_condition name.to_s, :eq, arguments.first.to_s })
+    hash = hash.first if which == :first
+    wrap_result hash 
   end
 
   def self.method_missing(name, *arguments)
     if name.to_s =~ /^find_all(_by)?_(.+)$/
-      polymorphic_finder($2, arguments)
+      polymorphic_finder(:all, $2, arguments)
     elsif name.to_s =~ /^find_(first_by|by)_(.+)$/
-      polymorphic_finder($2, arguments).first
+      polymorphic_finder(:first, $2, arguments)
     else
       super
     end
