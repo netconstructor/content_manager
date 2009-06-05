@@ -63,6 +63,14 @@ class ContentItem
     ContentItem.connection[url] = hash
   end
   
+  def to_yaml
+    attributes.to_yaml
+  end
+  
+  def to_json
+    attributes.to_json
+  end
+  
   def method_missing(name, *arguments)
     if arguments.length > 0
       attributes[name.to_s.chomp('=')] = arguments.first
