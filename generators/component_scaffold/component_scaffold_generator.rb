@@ -24,19 +24,13 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
     @controller_name = "components/#{@name}".pluralize
 
     base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(@controller_name)
-    puts "base_name=#{base_name}, @controller_class_path=#{@controller_class_path}, @controller_file_path=#{@controller_file_path}, @controller_class_nesting=#{@controller_class_nesting}, @controller_class_nesting_depth=#{@controller_class_nesting_depth}"
-    
     @controller_class_name_without_nesting, @controller_underscore_name, @controller_plural_name = inflect_names(base_name)
-    puts "@controller_class_name_without_nesting=#{@controller_class_name_without_nesting}, @controller_underscore_name=#{@controller_underscore_name}, @controller_plural_name=#{@controller_plural_name}"
-
     @controller_singular_name = base_name.singularize
     if @controller_class_nesting.empty?
       @controller_class_name = @controller_class_name_without_nesting
     else
       @controller_class_name = "#{@controller_class_nesting}::#{@controller_class_name_without_nesting}"
     end
-    
-    puts "controller_class_name=#{controller_class_name}"
   end
 
   def manifest
@@ -46,10 +40,10 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
       m.class_collisions(class_name)
 
       # Controller, helper, views, test and stylesheets directories.
-      m.directory(File.join('app/models/components', class_path))
+      m.directory(File.join('app/models', controller_class_path))
       m.directory(File.join('app/controllers', controller_class_path))
       m.directory(File.join('app/views', controller_class_path, controller_file_name))
-      m.directory(File.join('public/stylesheets/components', class_path))
+      m.directory(File.join('public/stylesheets', controller_class_path))
 
       for action in scaffold_views
         m.template(
@@ -59,7 +53,7 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
       end
 
       # Layout and stylesheet.
-      m.template('style.css', "public/stylesheets/components/#{file_name}.css")
+      m.template('style.css', "public/stylesheets/#{controller_class_path}/#{file_name}.css")
 
       m.template(
         'controller.rb', File.join('app/controllers', controller_class_path, "#{controller_file_name}_controller.rb")
@@ -67,7 +61,7 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
 
       m.route_resources table_name
       
-      m.template 'model.rb', File.join('app/models/components', class_path, "#{file_name}.rb")
+      m.template 'model.rb', File.join("app/models/#{controller_class_path}", class_path, "#{file_name}.rb")
     end
   end
 
