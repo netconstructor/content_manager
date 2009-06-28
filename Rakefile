@@ -5,11 +5,12 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "content_manager"
-    gem.summary = %Q{Simple Content Manager}
+    gem.summary = %Q{Content::Manager}
     gem.email = "syates@grandcentralmedia.com.au"
     gem.homepage = "http://github.com/sethyates/content_manager"
     gem.authors = ["Seth Yates"]
     gem.add_dependency('rufus-tokyo', '>= 0.1.12')
+    gem.add_dependency('actsasflinn-ruby-tokyotyrant', '>= 0.1.8')
   end
 
 rescue LoadError

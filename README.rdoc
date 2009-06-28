@@ -1,6 +1,6 @@
-= Content Manager
+= Content::Manager
 
-A simple content manager.  Currently prototype code.  Use at your own risk.
+A content manager.  Currently prototype code.  Use at your own risk.
 
 == Copyright
 
