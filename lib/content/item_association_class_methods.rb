@@ -3,7 +3,7 @@ module Content
     def ignored_attributes
       @ignored_attributes ||= []
     end
-    
+
     def serialized_attributes
       @serialized_attributes ||= []
     end
@@ -15,31 +15,57 @@ module Content
       serialized_attributes << name_ids
 
       define_method(name_ids) do
-        self[name_ids] ||= []
+        if instance_variable_get("@#{name}_loaded".to_sym)
+          self[name_ids] = self[name].collect(&:id)
+          self[name] = nil
+          instance_variable_set("@#{name}_loaded".to_sym, false)
+        else
+          if self[name_ids].nil?
+            self[name_ids] = []
+          else
+            self[name_ids] = ActiveSupport::JSON.decode(self[name_ids]) if !self[name_ids].is_a?(Array) and self[name_ids].is_a? String
+          end
+        end
+        self[name_ids]
       end
 
       define_method("#{name_ids}=".to_sym) do |val|
+        self[name] = nil
+        instance_variable_set("@#{name}_loaded".to_sym, false)
+
         if val.is_a? Content::Item
           self[name_ids] = [val.id.to_i] 
         elsif !val.is_a? Array
           self[name_ids] = [val.to_i]
         else
-          self[name_ids] = val.to_i
+          self[name_ids] = val
         end
       end
 
       define_method(name) do
         ary = self[name]
         if ary.nil?
-          self[name] = ary = (self[name_ids] || []).collect {|id| self.class.find(id.to_i) }
+          self[name] = ary = (self.send(name_ids) || []).collect {|id| self.class.find(id.to_i) }
+          instance_variable_set("@#{name}_loaded".to_sym, true)
+          self[name_ids] = nil
         end
         ary
       end
 
       define_method("#{name}=".to_sym) do |val|
         if val.is_a? Array
-          self[name_ids] = val
+          instance_variable_set("@#{name}_loaded".to_sym, true)
+          self[name] = val
+          self[name_ids] = nil
+        elsif val.nil?
+          instance_variable_set("@#{name}_loaded".to_sym, false)
+          self[name] = nil
+          self[name_ids] = nil
         end
+      end
+
+      define_method("#{name}_loaded".to_sym) do
+        instance_variable_get("@#{name}_loaded".to_sym)
       end
     end
 
@@ -82,8 +108,10 @@ module Content
       names = [name_or_ary] unless name_or_ary.is_a? Array
       names.each do |name|
         serialized_attributes << name
+        field_klass = field_type.to_s.camelcase.constantize
 
         define_method(name) do
+          self[name] = ActiveSupport::JSON.decode(self[name]) if !self[name].is_a?(field_klass) and self[name].is_a? String
           self[name]
         end
 

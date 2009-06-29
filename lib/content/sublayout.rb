@@ -31,7 +31,7 @@ module Content
       @containers = returning [] do |tainers|
         File.open("app/views/sublayouts/#{@path}", File::RDONLY) do |fd|
           fd.each do |line|
-            tainers << ($2 || "layout").to_sym if line =~ /yield[ \t]*(\(?[ \t]*:([a-z]+)[ \t]*\)?)?%/i
+            tainers << ($2 || "contents").to_sym if line =~ /yield[ \t]*(\(?[ \t]*:([a-z]+)[ \t]*\)?)?%/i
           end
         end
       end

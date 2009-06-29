@@ -60,7 +60,10 @@ module Content
     def save
       self[:__id] = self.class.connection.genuid if self[:__id].nil?
       if new_record? or changed?
-        self.class.connection.save_record(self.class, self.id, @attributes.reject {|k,v| self.class.ignored_attributes.include? k })
+        saved_attributes = {}
+        self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }
+        @attributes.each {|k,v| saved_attributes[k] = v.is_a?(String) ? v : v.to_json unless self.class.ignored_attributes.include? k }
+        self.class.connection.save_record(self.class, self.id, saved_attributes)
         @new_record = false
         @changed = false
         @changed_attributes = {}

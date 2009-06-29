@@ -8,39 +8,23 @@ module Content
       end
     end
 
-  private
+  protected
     def prerender_containers
-      sublayout = Content::Sublayout.find_by_path(current_content_item.template.sublayout)
-      unless sublayout.nil?
-        begin
-          sublayout.containers.each {|name| content_for name, render_container(name) }
-        rescue RuntimeError => err
-          render500(err) and return false
-        end
-        true
-      else
-        false
-      end
-    end
-
-    def content_for(name, content)
-      ivar = "@content_for_#{name}"
-      instance_variable_set(ivar, "#{instance_variable_get(ivar)}#{content}")
-    end
-
-    def choose_layout
-      :application unless params[:action] == "show"
-    end
-
-    def render500(err)
-      respond_to do |format| 
-        format.html { render :text => err, :layout => false, :status => 500 } 
-        format.all  { render :nothing => true, :status => 500 } 
+      begin
+        sublayout = Content::Sublayout.find_by_path(current_content_item.template.sublayout)
+        sublayout.containers.each {|name| content_for name, render_container(name) }
+      rescue RuntimeError => err
+        render500(err) and return false
       end
       true
     end
 
-  protected
+    def content_for(name, content)
+      name = "layout" if name.to_s == "contents"
+      ivar = "@content_for_#{name}"
+      instance_variable_set(ivar, "#{instance_variable_get(ivar)}#{content}")
+    end
+
     #
     # Renders the given component
     #
@@ -80,9 +64,11 @@ module Content
     # name the name of the container to render
     #
     def render_container(name)
-      current_content_item.template.components_hash[name].collect {|component|
-        render_component(:controller => "components/#{component.keys.first.to_s.pluralize}", :action => "show", :id => component.values.first)
-      } unless current_content_item.nil? or current_content_item.template.nil? or current_content_item.template.components_hash.nil? or current_content_item.template.components_hash[name].nil?
+      unless current_content_item.nil? or current_content_item.template.nil? or current_content_item.template[name].nil?
+        current_content_item.template.get_container(name).collect {|component|
+          render_component(:controller => "components/#{component.keys.first.to_s.pluralize}", :action => "show", :id => component.values.first)
+        }
+      end
     end
 
     def render404
@@ -93,23 +79,12 @@ module Content
       true
     end
 
-    def current_content_item
-      @content_item ||= begin
-        url = params["content_item_url"]
-        unless url.nil?
-          if url.is_a? Array
-            url = "/#{url.join('/')}"
-          else
-            url = url.to_s
-          end
-          if url.match(/^(.+)\.([a-z]+)$/i)
-            params[:format] = $2
-            url = $1
-          end
-          params["content_item_url"] = url
-          Content::Item.find_by_url(url)
-        end
+    def render500(err)
+      respond_to do |format| 
+        format.html { render :text => err, :layout => false, :status => 500 } 
+        format.all  { render :nothing => true, :status => 500 } 
       end
+      true
     end
   end
 end

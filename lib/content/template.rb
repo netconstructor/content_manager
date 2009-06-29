@@ -2,22 +2,23 @@ module Content
   class Template < Content::Item
     field :components
     field :sublayout
+    field :contents, :array
     validates_length_of :heading, :minimum => 5
     validates_presence_of :sublayout
-  
-    def components_hash
-      if @components_hash.nil?
-        @components_hash = {}
-        comps = components.split(';')
-        comps.each do |comp|
-          defn = comp.split(':')
-          @components_hash[defn[0].strip.to_sym] = defn[1].strip.split(',').collect(&:strip).collect {|item|
-              lr = item.split("=")
-              {lr[0].strip.to_sym => lr[1].strip}
-            }
-        end
+
+    def template
+      self
+    end
+
+    def set_container(name, contents)
+      instance_variable_set "@#{name}_obj".to_sym, ActiveSupport::JSON.encode(contents)
+    end
+
+    def get_container(name)
+      ivar = "@#{name}_obj".to_sym
+      obj = instance_variable_get(ivar) or returning ActiveSupport::JSON.decode(self[name]) do
+        instance_variable_set ivar, obj
       end
-      @components_hash
     end
   end
 end
