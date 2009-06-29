@@ -1,5 +1,20 @@
 module Content
   module Manager
+    def self.load_content_item(params)
+      url = params["content_item_url"]
+      unless url.nil?
+        if url.is_a? Array
+          url = "/#{url.join('/')}"
+        end
+        if url.match(/^(.+)\.([a-z]+)$/i)
+          params[:format] = $2
+          url = $1
+        end
+        params["content_item_url"] = url
+        Content::Item.find_by_url(url)
+      end
+    end
+
     def show
       render404 and return if current_content_item.nil? or current_content_item.template.nil? or current_content_item.template.sublayout.nil?
       respond_to do |format|
