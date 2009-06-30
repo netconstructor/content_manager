@@ -90,6 +90,16 @@ module Content
       end
     end
 
+    def paginate(*args)
+      options = args.first.dup
+      options[:conditions] = (options[:conditions] || {}).merge(:content_type => name)
+      options[:limit] = (options[:per_page] || 25)
+      options[:offset] = ((options[:page] || 1) - 1) * options[:limit]
+      options.delete :page
+      options.delete :per_page
+      find(:all, options)
+    end
+
     def find_by_id(id)
       wrap_result :first, connection.get_record_by_id(self, id.to_i)
     end
@@ -134,6 +144,8 @@ module Content
         if obj.nil?
           self.create(arguments, &block)
         end
+      elsif name_s =~ /^paginate_by_(.+)$/
+        obj = polymorphic_pager $1, arguments
       else
         obj = super
       end
@@ -152,6 +164,17 @@ module Content
       find which, :conditions => hash_zip(name.split(/_and_/), arguments)
     end
 
+    def polymorphic_pager(name, arguments)
+      names = name.split(/_and_/)
+      options = arguments.length > names.length ? arguments.last : {}
+      if options.has_key? :conditions
+        options[:conditions].merge! hash_zip(names, arguments)
+      else
+        options.merge!({:conditions => hash_zip(names, arguments)})
+      end
+      paginate options
+    end
+
     def create_item(attrs)
       if attrs.nil?
         nil
@@ -168,7 +191,7 @@ module Content
         case which
         when :first then create_item attrs.first
         when :last then create_item attrs.last
-        else attrs.collect { |item| create_item(item) }
+        else attrs.collect { |item| create_item(item) }.compact
         end
       end
     end

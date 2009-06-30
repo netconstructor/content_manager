@@ -176,5 +176,3 @@ end
 # All operations can be flagged by bitwise-or:
 # NEGATE - for negation
 # NOIDX - for using no index.
-
-# TODO: Implement pagination
