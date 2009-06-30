@@ -3,7 +3,7 @@ module Content
     extend ItemAssociationClassMethods
     extend ItemFinderClassMethods
     extend ItemClassMethods
-
+    
     fields :status, :version, :url, :heading, :summary, :content_type
     belongs_to :template
 
@@ -13,7 +13,7 @@ module Content
       @new_record = !@attributes.has_key?(:__id)
       yield(self) if block_given?
     end
-    
+
     def save
       create_or_update
     end
@@ -139,8 +139,6 @@ module Content
       self[:__id].to_i unless self[:__id].nil?
     end
 
-		include ActiveRecord::Validations
-    
   private
     def changed_attributes
       @changed_attributes ||= {}
@@ -148,8 +146,11 @@ module Content
 	end
 end
 
-Content::Item.send :include, ActiveRecord::Callbacks
-
+Content::Item.class_eval do
+  include Content::ItemDirtyMethods
+  include ActiveRecord::Validations
+  include ActiveRecord::Callbacks
+end
 
 
 # RDBQC*
