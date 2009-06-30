@@ -90,6 +90,10 @@ module Content
       end
     end
 
+    def count(options)
+      connection.count(self, options)
+    end
+    
     def paginate(*args)
       options = args.first.dup
       options[:conditions] = (options[:conditions] || {}).merge(:content_type => name)

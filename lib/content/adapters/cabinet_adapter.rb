@@ -9,6 +9,9 @@ module Content
         @connection = Rufus::Tokyo::Table.new(file, mode)
       end
 
+      def prepare_query(klass, query_options)
+      end
+      
       def run_query(klass, query_options)
         results = nil
         ms = Benchmark.ms do
@@ -22,6 +25,10 @@ module Content
         results
       end
 
+      def count(klass, query_options)
+        run_query(klass, query_options).length
+      end
+      
       def get_record_by_id(klass, id)
         record = nil
         ms = Benchmark.ms do

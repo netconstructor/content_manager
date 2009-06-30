@@ -10,19 +10,33 @@ module Content
         @logger = ActiveRecord::Base.logger
       end
 
-      def run_query(klass, query_options)
+      def prepare_query(klass, query_options)
         query_options[:limit] ||= 1000
         query_options[:offset] || -1
+        returning @connection.query do |q|
+          (query_options[:conditions] || {}).each { |key, value| q.condition(key, :streq, value) }
+          (query_options[:order] || []).each { |order| q.order_by(order, :strasc) }
+          q.limit(query_options[:limit], query_options[:offset])
+        end
+      end
+
+      def run_query(klass, query_options)
         results = nil
         ms = Benchmark.ms do
-          query = returning @connection.query do |q|
-            (query_options[:conditions] || {}).each { |key, value| q.condition(key, :streq, value) }
-            (query_options[:order] || []).each { |order| q.order_by(order, :strasc) }
-            q.limit(query_options[:limit], query_options[:offset])
-          end
+          query = prepare_query klass, query_options
           results = query.get
         end
         log_select(query_options, klass, ms)
+        results
+      end
+
+      def count(klass, query_options)
+        results = nil
+        ms = Benchmark.ms do
+          query = prepare_query klass, query_options
+          results = query.searchcount
+        end
+        log_count(query_options, klass, ms)
         results
       end
 
