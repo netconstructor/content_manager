@@ -205,35 +205,32 @@ A Template joins a Sublayout together with the contents if the Sublayout’s con
 4.	Edit the routes file to fix the default route created.  In other words:
 
 		ActionController::Routing::Routes.draw do |map|
-		  map.resources :video_players        # << note it is misplaced
+			map.resources :video_players        # << note it is misplaced
 
-		  # Components ===================================================
-		  map.namespace :components do |component|
-		    # Core CMS
-		    component.resources :containers, :only => [:show]
+			# Components ===================================================
+			map.namespace :components do |component|
+				# Core CMS
+				component.resources :containers, :only => [:show]
 
-		    # Extensions
-		    component.resources :section_heros
-		  end
-		  # END Components
-  
-		...
-	
-  becomes:
+				# Extensions
+				component.resources :section_heros
+				end
+				# END Components
+			...
 
-	ActionController::Routing::Routes.draw do |map|
+	becomes:
 
-	  # Components ===================================================
-	  map.namespace :components do |component|
-	    # Core CMS
-	    component.resources :containers, :only => [:show]
+		ActionController::Routing::Routes.draw do |map|
+			# Components ===================================================
+			map.namespace :components do |component|
+				# Core CMS
+				component.resources :containers, :only => [:show]
 
-	    # Extensions
-	    component.resources :section_heros
-	    component.resources :video_players        # << it goes here
-	  # END Components
- 
-	...
+				# Extensions
+				component.resources :section_heros
+				component.resources :video_players        # << it goes here
+				# END Components
+			...
 	
 5.	Edit your controller and views as for any normal Rails app.  The controller should typically redirect to the index action in the create and update actions instead of to the show action.  In other words:
 

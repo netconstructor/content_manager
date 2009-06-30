@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>File: README.rdoc</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+  <div id="fileHeader">
+    <h1>README.rdoc</h1>
+    <table class="header-table">
+    <tr class="top-aligned-row">
+      <td><strong>Path:</strong></td>
+      <td>README.rdoc
+      </td>
+    </tr>
+    <tr class="top-aligned-row">
+      <td><strong>Last Update:</strong></td>
+      <td>Tue Jun 30 21:15:30 +1000 2009</td>
+    </tr>
+    </table>
+  </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <h1>Content::Manager</h1>
+<h2>Overview</h2>
+<p>
+The Content::Manager plugin provides Content Management capability for
+Rails applications. Content::Manager is built on top of a Tokyo Tyrant (or
+Tokyo Cabinet) schema-less table database. Using standard Rails
+functionality of models, views and controllers with some additional
+&quot;glue&quot;, Content::Manager makes it straight-forward to build
+component-based, content-managed Rails applications.
+</p>
+<h2>How it works</h2>
+<p>
+The Content Manager is invoked by the final route in the routes file:
+</p>
+<pre>
+  map.content_item '*content_item_url', :controller =&gt; 'content', :action =&gt; 'show'
+</pre>
+<p>
+This route tells Rails to pass any URL (in the content_item_url parameter)
+to the show action of the ContentController.
+</p>
+<p>
+When the show action in the ContentController is invoked (inherited from
+Content::Manager), the before_filter :current_content_item in the
+ApplicationController is invoked first. This causes the Content::Item
+specified by the URL in content_item_url to be loaded using
+Content::Item.find_by_url params[:content_item_url].
+</p>
+<p>
+Back in the ContentController#show action, the current_content_item is
+checked if it is nil, if it is missing a template or if its template is
+missing a sublayout. In any of these cases, a 404 Not Found error is
+rendered (specified in app/views/errors/error404.html.erb).
+</p>
+<p>
+Assuming we have a valid Content::Item with a template and a sublayout,
+then the containers are rendered (using prerender_containers, content_for,
+render_container and render_component in Content::Manager). The contents of
+each container are stored for later use by yield within the Sublayout.
+Finally, the Sublayout is rendered as a template using render :template. At
+this point, no layout is specified, so Sublayouts have to provide the full
+HTML. This may change in the future though.
+</p>
+<p>
+The Content::Manager#render_component method requires special mention. This
+method operates by creating a new Rack request and handing the request off
+to the ActionController::Routing::Routes table. Any error from here is
+raised as a RuntimeError with the message being the full HTML returned from
+the error. In the case of Content::Manager, any errors from the components
+is returned as the page error.
+</p>
+<h2>Creating a Content Item</h2>
+<ol>
+<li>Create the content_scaffold.
+
+<pre>
+        $ script/generate content_scaffold Video duration:string
+              exists  app/models/content
+              exists  app/controllers/content
+              create  app/views/content/videos
+              exists  app/views/errors
+              exists  app/views/sublayouts
+              exists  public/stylesheets/content
+              create  app/views/content/videos/index.html.erb
+              create  app/views/content/videos/show.html.erb
+              create  app/views/content/videos/new.html.erb
+              create  app/views/content/videos/edit.html.erb
+              create  app/controllers/content/videos_controller.rb
+               route  map.resources :videos
+              create  app/models/content/video.rb
+</pre>
+</li>
+<li>Edit the model (app/models/content/video.rb) and add fields
+
+<p>
+You can use the field method or fields method. You can optionally specify
+the type of the field as the second parameter to field. The following
+methods are available: field_name, fieldname=, fieldname_changed?,
+fieldname_change, fieldname_was.
+</p>
+<pre>
+        class Content::Video &lt; Content::Item
+            field :duration
+        end
+</pre>
+</li>
+<li>Add associations (has_many, has_one, belongs_to)
+
+<dl>
+<dt>has_many</dt><dd>creates a one-to-many association implemented as an array of ID’s. The
+following methods are available: singular_association_ids,
+singular_association_ids=, association, association=.
+
+</dd>
+<dt>has_one</dt><dd>creates a one-to-one association implemented as the ID of the other item.
+The following methods are available: association_id, association_id=,
+association, association=.
+
+</dd>
+<dt>belongs_to</dt><dd>creates a many-to-one association implemented as the ID of the other item.
+The following methods are available: association_id, association_id=,
+association, association=.
+
+</dd>
+</dl>
+<pre>
+        class Content::Video &lt; Content::Item
+            field :heading
+            field :duration
+            belongs_to :parent_section
+        end
+</pre>
+</li>
+<li>Add validations. All of the standard ActiveRecord validations are
+available.
+
+<pre>
+        class Content::Video &lt; Content::Item
+            field :heading
+            field :duration
+            belongs_to :parent_section
+            validates_presence_of :heading
+        end
+</pre>
+</li>
+<li>Set any indexes required.
+
+<pre>
+        class Content::Video &lt; Content::Item
+            field :heading
+            field :duration
+            belongs_to :parent_section
+            validates_presence_of :heading
+            index :heading, :lexical
+        end
+</pre>
+</li>
+<li>Edit the routes file to fix the default route created. In other words:
+
+<pre>
+        ActionController::Routing::Routes.draw do |map|
+          map.resources :videos        # &lt;&lt; note it is misplaced
+
+          # Content =======================================================
+          map.namespace :content do |content|
+            # Core CMS
+            content.resources :sublayouts, :only =&gt; [:index, :show]
+            content.resources :components, :only =&gt; [:index, :show]
+            content.resources :templates
+
+            # Extensions
+            content.resources :articles
+            content.resources :photo_galleries
+            content.resources :photos
+          end
+          # END Content
+
+        ...
+</pre>
+<p>
+becomes:
+</p>
+<pre>
+        ActionController::Routing::Routes.draw do |map|
+
+          # Content =======================================================
+          map.namespace :content do |content|
+            # Core CMS
+            content.resources :sublayouts, :only =&gt; [:index, :show]
+            content.resources :components, :only =&gt; [:index, :show]
+            content.resources :templates
+
+            # Extensions
+            content.resources :videos       # &lt;&lt; it should go here
+            content.resources :articles
+            content.resources :photo_galleries
+            content.resources :photos
+          end
+          # END Content
+
+        ...
+</pre>
+</li>
+<li>Edit your controller and views as for any normal Rails app. The controller
+should typically redirect to the index action in the create and update
+actions instead of to the show action. In other words:
+
+<pre>
+        format.html { redirect_to(@video) }
+</pre>
+<p>
+becomes
+</p>
+<pre>
+        format.html { redirect_to(content_videos_url) }
+</pre>
+</li>
+</ol>
+<h2>Using Content Items</h2>
+<p>
+Once you have created your Content::Item, you can use most of the standard
+ActiveRecord finder methods:
+</p>
+<pre>
+        section = Content::Section.new()
+        section.heading = &quot;My Heading&quot;
+        section.body = &quot;My Body&quot;
+        section.new_record?  # =&gt; true
+        section.save
+        section.new_record?  # =&gt; false
+
+        section = Content::Section.new(:heading =&gt; &quot;My Heading&quot;, :body =&gt; &quot;My Body&quot;)
+        section.save
+
+        section = Content::Section.new() do |sect|
+            sect.heading = &quot;My Heading&quot;
+            sect.body = &quot;My Body&quot;
+        end
+        section.save
+
+        Content::Section.find_by_id(id)
+        Content::Section.find id
+
+        Content::Section.first
+        Content::Section.find(:first)
+        Content::Section.find(:first, :conditions =&gt; { :user_name =&gt; user_name })
+        Content::Section.find(:first, :order =&gt; :created_on, :offset =&gt; 5)
+
+        Content::Section.last
+        Content::Section.find(:last)
+        Content::Section.find(:last, :conditions =&gt; { :user_name =&gt; user_name })
+        Content::Section.find(:last, :order =&gt; :created_on, :offset =&gt; 5)
+
+        Content::Section.all
+        Content::Section.find(:all)
+        Content::Section.find(:all, :conditions =&gt; { :friends =&gt; &quot;Bob&quot; })
+        Content::Section.find(:all, :offset =&gt; 10, :limit =&gt; 10)
+
+        Content::Section.find_by_url &quot;/url&quot;
+        Content::Section.find_by_url_and_status &quot;/url&quot;, &quot;active&quot;
+</pre>
+<h2>Creating a Sublayout</h2>
+<p>
+A sublayout is a standard Rails layout file, except it is created in the
+apps/views/sublayouts folder instead of apps/views/layouts. The sublayout
+accesses the contents of the containers as specified in the Template by
+yielding the container name. For example, to insert the contents of the
+&quot;left&quot; container, simply yield :left. Note that yield without an
+argument is the same as yield :contents as it accesses the
+&quot;contents&quot; container.
+</p>
+<h2>Creating a Template</h2>
+<p>
+A Template joins a Sublayout together with the contents if the
+Sublayout’s containers. This allows the contents of the containers to be
+dynamically changed without changing the code of the Sublayout. A Template
+is just a Content::Item which has two interesting fields: heading (the name
+of the Template), sublayout (the relative path of the sublayout within the
+app/views/sublayouts folder). In addition to these standard fields, fields
+named after the containers in the sublayout are also created. For example,
+if the sublayout has the following containers [:left, :contents, :right],
+then there will be &quot;left&quot;, &quot;contents&quot; and
+&quot;right&quot; fields in the Template. The value of each field is an
+array of the components for that container.
+</p>
+<h2>Creating a Component</h2>
+<ol>
+<li>Create the component_scaffold.
+
+<pre>
+        $ script/generate component_scaffold VideoPlayer
+              exists  app/models/components
+              exists  app/controllers/components
+              create  app/views/components/video_players
+              exists  public/stylesheets/components
+              create  app/views/components/video_players/index.html.erb
+              create  app/views/components/video_players/show.html.erb
+              create  app/views/components/video_players/new.html.erb
+              create  app/views/components/video_players/edit.html.erb
+              create  public/stylesheets/components/video_player.css
+              create  app/controllers/components/video_players_controller.rb
+               route  map.resources :video_players
+              create  app/models/components/video_player.rb
+</pre>
+</li>
+<li>Edit the model (app/models/components/video_player.rb).
+
+<pre>
+        class Components::VideoPlayer &lt; Content::Item
+        end
+</pre>
+</li>
+<li>As you can see from above, the component is simply another Content::Item,
+so all of the capabilities covered in creating a Content::Item apply.
+
+</li>
+<li>Edit the routes file to fix the default route created. In other words:
+
+<pre>
+        ActionController::Routing::Routes.draw do |map|
+                map.resources :video_players        # &lt;&lt; note it is misplaced
+
+                # Components ===================================================
+                map.namespace :components do |component|
+                        # Core CMS
+                        component.resources :containers, :only =&gt; [:show]
+
+                        # Extensions
+                        component.resources :section_heros
+                        end
+                        # END Components
+                ...
+</pre>
+<p>
+becomes:
+</p>
+<pre>
+        ActionController::Routing::Routes.draw do |map|
+                # Components ===================================================
+                map.namespace :components do |component|
+                        # Core CMS
+                        component.resources :containers, :only =&gt; [:show]
+
+                        # Extensions
+                        component.resources :section_heros
+                        component.resources :video_players        # &lt;&lt; it goes here
+                        # END Components
+                ...
+</pre>
+</li>
+<li>Edit your controller and views as for any normal Rails app. The controller
+should typically redirect to the index action in the create and update
+actions instead of to the show action. In other words:
+
+<pre>
+        format.html { redirect_to(@video_player) }
+</pre>
+<p>
+becomes
+</p>
+<pre>
+        format.html { redirect_to(components_video_player_url) }
+</pre>
+</li>
+<li>The show view is the view that will be embedded within pages. The standard
+component layout (app/layouts/components.html.erb) will wrap the component
+in a &lt;div&gt; with the &quot;component&quot; class and a class with the
+name of the component model (in this case &quot;video_player&quot;), as
+follows:
+
+<pre>
+        &lt;div id=&quot;video_player_6253&quot; class=&quot;video_player component&quot;&gt;
+                &lt;!-- component body goes here --&gt;
+        &lt;/div&gt;
+</pre>
+</li>
+</ol>
+<p>
+This allows for easy styling of the specific component and for all
+components.
+</p>
+<ol>
+<li>Edit the component stylesheet
+public/stylesheets/components/video_player.css. Put any styles specific to
+this component in this stylesheet. Don&#8216;t worry if you think this step
+will create a problem at runtime, as all of these stylesheets are combined
+at production time into a single stylesheet.
+
+<pre>
+        .video_player {}
+</pre>
+</li>
+</ol>
+<h2>Copyright</h2>
+<p>
+Copyright (c) 2009 Seth Yates
+</p>
+<p>
+Copyright (c) 2009 Independent Digital Media Pty Ltd
+</p>
+<p>
+See LICENSE for details.
+</p>
+
+    </div>
+
+
+   </div>
+
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>
