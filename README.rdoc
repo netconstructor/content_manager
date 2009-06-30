@@ -246,7 +246,7 @@ A Template joins a Sublayout together with the contents if the Sublayout’s con
 			<!-- component body goes here -->
 		</div>
 
-This allows for easy styling of the specific component and for all components.
+	This allows for easy styling of the specific component and for all components.
 
 7.	Edit the component stylesheet public/stylesheets/components/video_player.css.  Put any styles specific to this component in this stylesheet.  Don't worry if you think this step will create a problem at runtime, as all of these stylesheets are combined at production time into a single stylesheet.
 
