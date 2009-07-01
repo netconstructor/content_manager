@@ -81,7 +81,7 @@ module Content
     def render_container(name)
       unless current_content_item.nil? or current_content_item.template.nil? or current_content_item.template[name].nil?
         current_content_item.template.get_container(name).collect {|component|
-          render_component(:controller => "components/#{component.keys.first.to_s.pluralize}", :action => "show", :id => component.values.first)
+          render_component(:controller => "components/#{component.first.to_s.pluralize}", :action => "show", :id => component.second)
         }
       end
     end
