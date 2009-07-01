@@ -11,7 +11,7 @@ module Content
     end
 
     def set_container(name, contents)
-      instance_variable_set "@#{name}_obj".to_sym, ActiveSupport::JSON.encode(contents)
+      @attributes[name] = ActiveSupport::JSON.encode(contents)
     end
 
     def get_container(name)
