@@ -23,7 +23,7 @@ module Content
           if self[name_ids].nil?
             self[name_ids] = []
           else
-            self[name_ids] = ActiveSupport::JSON.decode(self[name_ids]) if !self[name_ids].is_a?(Array) and self[name_ids].is_a? String
+            self[name_ids] = ActiveSupport::JSON.decode(self[name_ids]) if self[name_ids].is_a? String
           end
         end
         self[name_ids]
@@ -111,7 +111,7 @@ module Content
         field_klass = field_type.to_s.camelcase.constantize
 
         define_method(name) do
-          self[name] = ActiveSupport::JSON.decode(self[name]) if !self[name].is_a?(field_klass) and self[name].is_a? String
+          self[name] = ActiveSupport::JSON.decode(self[name]) if !self[name].is_a?(field_klass) and self[name].is_a? String and !self[name].blank?
           self[name]
         end
 
