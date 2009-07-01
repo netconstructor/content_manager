@@ -165,7 +165,7 @@ module Content
     end
 
     def polymorphic_finder(which, name, arguments)
-      find which, :conditions => hash_zip(name.split(/_and_/), arguments)
+      find which, :conditions => hash_zip(name.split(/_and_/).collect(&:to_sym), arguments)
     end
 
     def polymorphic_pager(name, arguments)
@@ -182,10 +182,13 @@ module Content
     def create_item(attrs)
       if attrs.nil?
         nil
-      elsif !attrs[:content_type].nil?
-        attrs[:content_type].to_s.camelize.constantize.new(attrs)
-      elsif self == Content::Item
-        Content::Item.new(attrs)
+      else
+        attrs.symbolize_keys!
+        if !attrs[:content_type].nil?
+          attrs[:content_type].to_s.camelize.constantize.new(attrs)
+        elsif self == Content::Item
+          Content::Item.new(attrs)
+        end
       end
     end
 
