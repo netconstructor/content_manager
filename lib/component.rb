@@ -15,6 +15,11 @@ class Component
   def self.find(index)
     all[index.to_i - 1]
   end
+  
+  def self.find_by_category(category)
+    @categories ||= all.inject({}) {|h, obj| obj.controller.component_categories?.each {|i| h[i] ||= []; h[i] << obj.controller }; h }
+    @categories[category] ||= []
+  end
 
   def initialize(path)
     @name = path.gsub('.rb', '')
