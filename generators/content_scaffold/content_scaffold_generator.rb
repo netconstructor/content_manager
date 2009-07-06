@@ -49,7 +49,7 @@ class ContentScaffoldGenerator < Rails::Generator::NamedBase
 
       for action in scaffold_views
         m.template(
-          "view_#{action}.html.erb",
+          "view_#{action}.erb",
           File.join('app/views', controller_class_path, controller_file_name, "#{action}.html.erb")
         )
       end
@@ -74,7 +74,7 @@ class ContentScaffoldGenerator < Rails::Generator::NamedBase
     end
 
     def scaffold_views
-      %w[ index show new edit ]
+      %w[ _form ]
     end
 
     def model_name

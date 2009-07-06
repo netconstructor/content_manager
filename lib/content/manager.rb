@@ -11,7 +11,12 @@ module Content
           url = $1
         end
         params["content_item_url"] = url
-        Content::Item.find_by_url(url)
+        unless Thread.current[:current_item_url] == url 
+          Thread.current[:current_item_url] = url
+          Thread.current[:current_item] = Content::Item.find_by_url(url)
+        else
+          Thread.current[:current_item] ||= Content::Item.find_by_url(url)
+        end
       end
     end
 
@@ -81,7 +86,7 @@ module Content
     def render_container(name)
       unless current_content_item.nil? or current_content_item.template.nil? or current_content_item.template[name].nil?
         current_content_item.template.get_container(name).collect {|component|
-          render_component(:controller => "components/#{component.first.to_s.pluralize}", :action => "show", :id => component.second)
+          render_component(:controller => "components/#{component.keys.first.to_s.pluralize}", :action => "show", :id => component.values.first, :content_item_url => current_content_item.url)
         }
       end
     end

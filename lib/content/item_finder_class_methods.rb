@@ -75,10 +75,14 @@ module Content
       options[:limit] = 1 if which == :first
 
       if id.nil?
+        unless name == "Content::Item"
+          options[:conditions] ||= {}
+          options[:conditions][:content_type] = name
+        end
         wrap_result which, connection.run_query(self, options)
       elsif id.is_a? Array
         id.collect {|one_id| find_by_id one_id}.compact
-      elsif options.keys.length == 0
+      elsif options.keys.length <= 1
         find_by_id id
       else
         if options.has_key? :conditions
@@ -96,12 +100,21 @@ module Content
     
     def paginate(*args)
       options = args.first.dup
-      options[:conditions] = (options[:conditions] || {}).merge(:content_type => name)
-      options[:limit] = (options[:per_page] || 25)
-      options[:offset] = ((options[:page] || 1) - 1) * options[:limit]
+
+      page = (options[:page] || 1).to_i
       options.delete :page
+
+      per_page = (options[:per_page] || 30).to_i
       options.delete :per_page
-      find(:all, options)
+
+      total_entries = count(options)
+
+      options[:conditions] = (options[:conditions] || {}).merge(:content_type => name)
+      options[:limit] = per_page
+      options[:offset] = (page - 1) * options[:limit]
+
+      arr = find(:all, options)
+      WillPaginate::Collection.create(page, per_page, total_entries) { |pager| pager.replace arr }
     end
 
     def find_by_id(id)

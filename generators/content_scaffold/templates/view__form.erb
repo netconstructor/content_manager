@@ -1,0 +1,9 @@
+<%% form_assistant_for(@object) do |f| %>
+  <%%= f.error_messages %>
+  <%%= f.text_field :url %>
+  <%%= template_select f %>
+  <% for attribute in attributes -%>
+    <%%= f.<%= attribute.field_type %> :<%= attribute.name %> %>
+  <% end -%>
+  <%%= submit f %>
+<%% end %>
