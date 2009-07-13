@@ -117,12 +117,12 @@ module Content
       id.to_s
     end
 
-    def to_yaml
-      @attributes.to_yaml
+    def to_yaml(options = nil)
+      @attributes.to_yaml(options)
     end
 
-    def to_json
-      @attributes.to_json
+    def to_json(options = nil)
+      @attributes.to_json(options)
     end
     
     def to_xml(options = {}) 
