@@ -3,7 +3,7 @@ module Content
     field :components
     field :sublayout
     field :contents
-    validates_length_of :heading, :minimum => 5
+    validates_length_of :heading, :minimum => 3
     validates_presence_of :sublayout
 
     def template
