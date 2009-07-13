@@ -40,17 +40,19 @@ module Content
 
     def get_dublin_core(item)
       dc = []
-      dc << {:type => :meta, :name => "DC.title", :content => item.heading} unless item.heading.nil?
-      dc << {:type => :meta, :name => "DC.subject", :content => item.subject} unless item.subject.nil?
-      dc << {:type => :meta, :name => "DC.description", :content => item.summary} unless item.summary.nil?
-      dc << {:type => :meta, :name => "DC.contributor", :content => item.contributor} unless item.contributor.nil?
-      dc << {:type => :meta, :name => "DC.creator", :content => item.creator} unless item.creator.nil?
-      dc << {:type => :meta, :name => "DC.publisher", :content => item.publisher} unless item.publisher.nil?
-      dc << {:type => :meta, :name => "DC.source", :content => item.source} unless item.source.nil?
-      dc << {:type => :meta, :name => "DC.date.issued", :content => item.created_at} unless item.created_at.nil?
-      dc << {:type => :meta, :name => "DC.date.modified", :content => item.updated_at} unless item.updated_at.nil?
-      dc << {:type => :meta, :name => "DC.identifier", :content => item.url} unless item.url.nil?
-      dc.insert(0, {:type => :link, :rel  => "schema.DC", :href => "http://purl.org/dc/elements/1.1/"}) if dc.length > 0
+      unless item.nil?
+        dc << {:type => :meta, :name => "DC.title", :content => item.heading} unless item.heading.nil?
+        dc << {:type => :meta, :name => "DC.subject", :content => item.subject} unless item.subject.nil?
+        dc << {:type => :meta, :name => "DC.description", :content => item.summary} unless item.summary.nil?
+        dc << {:type => :meta, :name => "DC.contributor", :content => item.contributor} unless item.contributor.nil?
+        dc << {:type => :meta, :name => "DC.creator", :content => item.creator} unless item.creator.nil?
+        dc << {:type => :meta, :name => "DC.publisher", :content => item.publisher} unless item.publisher.nil?
+        dc << {:type => :meta, :name => "DC.source", :content => item.source} unless item.source.nil?
+        dc << {:type => :meta, :name => "DC.date.issued", :content => item.created_at} unless item.created_at.nil?
+        dc << {:type => :meta, :name => "DC.date.modified", :content => item.updated_at} unless item.updated_at.nil?
+        dc << {:type => :meta, :name => "DC.identifier", :content => item.url} unless item.url.nil?
+        dc.insert(0, {:type => :link, :rel  => "schema.DC", :href => "http://purl.org/dc/elements/1.1/"}) if dc.length > 0
+      end
       dc
     end
 
