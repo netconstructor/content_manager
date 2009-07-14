@@ -94,7 +94,12 @@ module Content
       end
     end
 
-    def count(options)
+    def count(options = {})
+      unless name == "Content::Item"
+        options[:conditions] ||= {}
+        options[:conditions].merge!(:content_type => name)
+      end
+      options[:limit] = 10000
       connection.count(self, options)
     end
     
