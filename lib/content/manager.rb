@@ -11,21 +11,24 @@ module Content
           url = $1
         end
         params["content_item_url"] = url
-        unless Thread.current[:current_item_url] == url 
+        if Thread.current[:current_item_url] != url 
           Thread.current[:current_item_url] = url
+          Thread.current[:current_item_loaded] = true
           Thread.current[:current_item] = Content::Item.find_by_url(url)
-        else
-          Thread.current[:current_item] ||= Content::Item.find_by_url(url)
+        elsif !Thread.current[:current_item_loaded]
+          Thread.current[:current_item_loaded] = true
+          Thread.current[:current_item] = Content::Item.find_by_url(url)
         end
       end
     end
 
     def self.unload_content_item
       Thread.current[:current_item] = nil
+      Thread.current[:current_item_loaded] = false
     end
 
     def show
-      render404 and return if current_content_item.nil? or current_content_item.template.nil? or current_content_item.template.sublayout.nil?
+      render_404 and return if current_content_item.nil? or current_content_item.template.nil? or current_content_item.template.sublayout.nil?
       respond_to do |format|
         format.html { prerender_containers and render :template => "sublayouts/#{current_content_item.template.sublayout}", :layout => current_content_item.template.layout }
         format.xml  { render :xml => current_content_item }
@@ -73,7 +76,7 @@ module Content
         @sublayout = Content::Sublayout.find_by_path(current_content_item.template.sublayout)
         @sublayout.containers.each {|name| content_for name, render_container(name) }
       rescue RuntimeError => err
-        render500(err) and return false
+        render_500(err) and return false
       end
       true
     end
@@ -130,7 +133,7 @@ module Content
       end
     end
 
-    def render404
+    def render_404
       respond_to do |format| 
         format.html { render :template => "errors/error_404", :status => 404 } 
         format.all  { render :nothing => true, :status => 404 } 
@@ -138,7 +141,7 @@ module Content
       true
     end
 
-    def render500(err)
+    def render_500(err)
       respond_to do |format| 
         format.html { render :text => err, :layout => false, :status => 500 } 
         format.all  { render :nothing => true, :status => 500 } 

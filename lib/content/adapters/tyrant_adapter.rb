@@ -14,11 +14,37 @@ module Content
         query_options[:limit] ||= 1000
         query_options[:offset] || -1
         returning @connection.query do |q|
-          (query_options[:conditions] || {}).each { |key, value| q.condition(key, :streq, value) }
+          (query_options[:conditions] || {}).each { |key, value| 
+            if value.is_a? Hash
+              q.condition(key, value.keys.first, value.values.first) 
+            else
+              q.condition(key, :streq, value) 
+            end
+          }
           (query_options[:order] || []).each { |order| q.order_by(order, :strasc) }
           q.limit(query_options[:limit], query_options[:offset])
         end
       end
+      
+      # :streq - for string which is equal to the expression
+      # :strinc - for string which is included in the expression
+      # :strbw - for string which begins with the expression
+      # :strew - for string which ends with the expression
+      # :strand - for string which includes all tokens in the expression
+      # :stror - for string which includes at least one token in the expression
+      # :stroreq - for string which is equal to at least one token in the expression
+      # :strrx - for string which matches regular expressions of the expression
+      # :numeq - for number which is equal to the expression
+      # :numgt - for number which is greater than the expression
+      # :numge - for number which is greater than or equal to the expression
+      # :numlt - for number which is less than the expression
+      # :numle - for number which is less than or equal to the expression
+      # :numbt - for number which is between two tokens of the expression
+      # :numoreq - for number which is equal to at least one token in the expression
+      # :ftsph - for full-text search with the phrase of the expression
+      # :ftsand - for full-text search with all tokens in the expression
+      # :ftsor - for full-text search with at least one token in the expression
+      # :ftsex - for full-text search with the compound expression. 
 
       def run_query(klass, query_options)
         results = nil

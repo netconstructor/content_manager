@@ -151,28 +151,3 @@ Content::Item.class_eval do
   include ActiveRecord::Validations
   include ActiveRecord::Callbacks
 end
-
-
-# RDBQC*
-# STREQ - for string which is equal to the expression
-# STRINC - for string which is included in the expression
-# STRBW - for string which begins with the expression
-# STREW - for string which ends with the expression
-# STRAND - for string which includes all tokens in the expression
-# STROR - for string which includes at least one token in the expression
-# STROREQ - for string which is equal to at least one token in the expression
-# STRRX - for string which matches regular expressions of the expression
-# NUMEQ - for number which is equal to the expression
-# NUMGT - for number which is greater than the expression
-# NUMGE - for number which is greater than or equal to the expression
-# NUMLT - for number which is less than the expression
-# NUMLE - for number which is less than or equal to the expression
-# NUMBT - for number which is between two tokens of the expression
-# NUMOREQ - for number which is equal to at least one token in the expression
-# FTSPH - for full-text search with the phrase of the expression
-# FTSAND - for full-text search with all tokens in the expression
-# FTSOR - for full-text search with at least one token in the expression
-# FTSEX - for full-text search with the compound expression. 
-# All operations can be flagged by bitwise-or:
-# NEGATE - for negation
-# NOIDX - for using no index.

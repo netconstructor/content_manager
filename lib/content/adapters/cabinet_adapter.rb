@@ -17,7 +17,13 @@ module Content
         ms = Benchmark.ms do
           query_options[:limit] ||= 1000
           results = @connection.query { |q|
-            (query_options[:conditions] || {}).each { |cond| q.add_condition cond[0], :eq, cond[1] }
+            (query_options[:conditions] || {}).each { |cond| 
+              if cond[1].is_a? Hash
+                q.condition(key, cond[1].keys.first, cond[1].values.first) 
+              else
+                q.add_condition cond[0], :eq, cond[1]
+              end
+            }
             (query_options[:order] || []).each {|order| q.order_by order }
           }.collect {|r| r.symbolize_keys }
         end
