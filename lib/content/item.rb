@@ -4,7 +4,10 @@ module Content
     extend ItemFinderClassMethods
     extend ItemClassMethods
     
-    fields :status, :version, :url, :heading, :summary, :content_type
+    fields :content_type, :status, :version, :url, :heading, :summary, :keywords, :subject
+    fields :contributor, :creator, :publisher, :source
+    field :created_at, :datetime
+    field :updated_at, :datetime
     belongs_to :template
 
     def initialize(attrs = {})

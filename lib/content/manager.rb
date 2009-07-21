@@ -29,6 +29,7 @@ module Content
 
     def show
       render_404 and return if current_content_item.nil? or current_content_item.template.nil? or current_content_item.template.sublayout.nil?
+      redirect_to(current_content_item.see, :status => 301) and return unless current_content_item.see.nil?
       respond_to do |format|
         format.html { prerender_containers and render :template => "sublayouts/#{current_content_item.template.sublayout}", :layout => current_content_item.template.layout }
         format.xml  { render :xml => current_content_item }
