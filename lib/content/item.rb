@@ -6,8 +6,8 @@ module Content
     
     fields :content_type, :status, :version, :url, :heading, :summary, :keywords, :subject
     fields :contributor, :creator, :publisher, :source
-    field :created_at, :datetime
-    field :updated_at, :datetime
+    field :created_at, :time
+    field :updated_at, :time
     belongs_to :template
 
     def initialize(attrs = {})
