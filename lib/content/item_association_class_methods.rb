@@ -111,7 +111,15 @@ module Content
         field_klass = field_type.to_s.camelcase.constantize
 
         define_method(name) do
-          self[name] = ActiveSupport::JSON.decode(self[name]) if !self[name].is_a?(field_klass) and self[name].is_a? String and !self[name].blank?
+          if !self[name].is_a?(field_klass) and self[name].is_a? String and !self[name].blank?
+            if field_klass == Symbol
+              @attributes[name] = self[name].to_sym
+            elsif field_klass == Time
+              @attributes[name] = Time.parse(self[name])
+            else
+              @attributes[name] = ActiveSupport::JSON.decode(self[name])
+            end
+          end
           self[name]
         end
 

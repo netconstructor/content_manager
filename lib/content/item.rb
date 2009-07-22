@@ -4,10 +4,13 @@ module Content
     extend ItemFinderClassMethods
     extend ItemClassMethods
     
-    fields :content_type, :status, :version, :url, :heading, :summary, :keywords, :subject
-    fields :contributor, :creator, :publisher, :source
+    fields :content_type, :version, :url, :heading, :summary, :keywords, :subject
+    fields :contributor, :creator, :publisher, :source, :priority
     field :created_at, :time
     field :updated_at, :time
+    field :status, :symbol
+    field :changefreq, :symbol
+    
     belongs_to :template
 
     def initialize(attrs = {})
@@ -28,18 +31,25 @@ module Content
     end
 
     def create
-      self[:__id] = self.class.connection.genuid if self[:__id].nil?
-      if new_record? or changed?
-        saved_attributes = {}
-        self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }
-        @attributes.each {|k,v| saved_attributes[k] = v.is_a?(String) ? v : v.to_json unless self.class.ignored_attributes.include?(k) }
-        self.class.connection.save_record(self.class, self.id, saved_attributes)
-        @new_record = false
-        changed_attributes.clear
+      if new_record?
+        self[:__id] = self.class.connection.genuid
+        flatten_associations
+        @attributes[:status] ||= :new
+        @attributes[:updated_at] = @attributes[:created_at] = Time.now.gmtime
+        perform_save
       end
       self
     end
-    alias update create
+
+    def update
+      if changed?
+        flatten_associations
+        @attributes[:updated_at] = Time.now.gmtime
+        perform_save
+      end
+      self
+    end
+
     alias respond_to_without_attributes? respond_to?
 
     def save!
@@ -143,6 +153,19 @@ module Content
     end
 
   private
+    def flatten_associations
+      self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }      
+    end
+  
+    def perform_save
+      saved_attributes = {}
+      @attributes[:version] = @attributes[:updated_at].strftime("%Y%m%d%H%M%S")
+      @attributes.each {|k,v| saved_attributes[k] = v.is_a?(String) ? v : v.is_a?(Symbol) ? v.to_s : v.to_json unless self.class.ignored_attributes.include?(k) }
+      self.class.connection.save_record(self.class, self.id, saved_attributes)
+      @new_record = false
+      changed_attributes.clear
+    end
+  
     def changed_attributes
       @changed_attributes ||= {}
     end

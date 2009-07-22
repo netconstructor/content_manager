@@ -114,7 +114,8 @@ module Content
 
       total_entries = count(options)
 
-      options[:conditions] = (options[:conditions] || {}).merge(:content_type => name)
+      options[:conditions] = (options[:conditions] || {})
+      options[:conditions].merge!(:content_type => name) unless name == "Content::Item"
       options[:limit] = per_page
       options[:offset] = (page - 1) * options[:limit]
 

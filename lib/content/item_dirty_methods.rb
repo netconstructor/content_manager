@@ -121,7 +121,13 @@ module Content
     
       def clone_attribute_value(method, attr)
         val = __send__(method, attr)
-        val.dup unless val.nil?
+        if val.nil?
+          nil
+        elsif val.is_a? Symbol
+          val
+        else
+          val.dup
+        end
       end
 
       # Wrap write_attribute to remember original attribute value.
