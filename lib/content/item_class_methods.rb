@@ -67,5 +67,11 @@ module Content
     def delete(id)
       destroy id
     end
+
+    def destroy_all!
+      all.each{ |i| i.destroy }
+      nil
+    end
+
   end
 end

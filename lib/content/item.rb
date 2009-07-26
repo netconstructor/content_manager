@@ -130,11 +130,11 @@ module Content
       id.to_s
     end
 
-    def to_yaml(options = nil)
+    def to_yaml(options = {})
       @attributes.to_yaml(options)
     end
 
-    def to_json(options = nil)
+    def to_json(options = {})
       @attributes.to_json(options)
     end
     
@@ -152,15 +152,35 @@ module Content
       self[:__id].to_i unless self[:__id].nil?
     end
 
+    def self.validates_uniqueness_of(*attr_names)
+      attr_names.each do |attr_name|
+        class_eval <<-EOV
+          validate :validates_uniqueness_of_#{attr_name}
+
+          def validates_uniqueness_of_#{attr_name}
+            if self.class.count(:conditions => {'#{attr_name}' => self.send('#{attr_name}') }) > (self.new_record? ? 0 : 1)
+              errors.add('#{attr_name}', "must be unique")
+            end
+          end
+        EOV
+      end
+    end
+
   private
     def flatten_associations
-      self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }      
+      self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }
     end
   
     def perform_save
       saved_attributes = {}
       @attributes[:version] = @attributes[:updated_at].strftime("%Y%m%d%H%M%S")
-      @attributes.each {|k,v| saved_attributes[k] = v.is_a?(String) ? v : v.is_a?(Symbol) ? v.to_s : v.to_json unless self.class.ignored_attributes.include?(k) }
+      @attributes.each {|k,v| 
+        saved_attributes[k] = case
+          when v.is_a?(String): v
+          when v.is_a?(Symbol): v.to_s
+          else v.to_json 
+          end unless self.class.ignored_attributes.include?(k) 
+      }
       self.class.connection.save_record(self.class, self.id, saved_attributes)
       @new_record = false
       changed_attributes.clear

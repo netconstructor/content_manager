@@ -7,7 +7,7 @@ module Content
       @sublayouts ||= Dir.glob("app/views/sublayouts/**/*.erb").collect {|path|
         path = path.gsub("app/views/sublayouts/", "")
         path unless path.match '/_' or path == "application.html.erb"
-      }.compact.collect {|path|
+      }.compact.sort.collect {|path|
         Sublayout.new(path)
       }.collect {|sublayout| 
         if sublayout.containers.length > 0

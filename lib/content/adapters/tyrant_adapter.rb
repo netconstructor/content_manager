@@ -12,7 +12,7 @@ module Content
 
       def prepare_query(klass, query_options)
         query_options[:limit] ||= 1000
-        query_options[:offset] || -1
+        query_options[:offset] ||= -1
         returning @connection.query do |q|
           (query_options[:conditions] || {}).each { |key, value| 
             if value.is_a? Hash
@@ -21,7 +21,12 @@ module Content
               q.condition(key, :streq, value) 
             end
           }
-          (query_options[:order] || []).each { |order| q.order_by(order, :strasc) }
+          (query_options[:order] || []).each { |order|
+            direction = :strasc
+            field = $1, direction = $2 if order =~ /^(.+)(ASC|DESC)?$/i
+            direction = "str#{direction.to_s.downcase}".to_sym unless direction.nil?
+            q.order_by(field, direction)
+          }
           q.limit(query_options[:limit], query_options[:offset])
         end
       end

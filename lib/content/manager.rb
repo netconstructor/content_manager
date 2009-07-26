@@ -37,41 +37,28 @@ module Content
     end
 
   protected
-    # <head profile="<%= get_dublin_core_profile %>">
-    def get_dublin_core_profile
-      "http://dublincore.org/documents/2008/08/04/dc-html/"
+    def head_profile
+      'profile="http://dublincore.org/documents/2008/08/04/dc-html/"'
     end
 
     def get_dublin_core(item)
       dc = []
       unless item.nil?
-        dc << {:type => :meta, :name => "DC.title", :content => item.heading} unless item.heading.nil?
-        dc << {:type => :meta, :name => "DC.subject", :content => item.subject} unless item.subject.nil?
-        dc << {:type => :meta, :name => "DC.description", :content => item.summary} unless item.summary.nil?
-        dc << {:type => :meta, :name => "DC.contributor", :content => item.contributor} unless item.contributor.nil?
-        dc << {:type => :meta, :name => "DC.creator", :content => item.creator} unless item.creator.nil?
-        dc << {:type => :meta, :name => "DC.publisher", :content => item.publisher} unless item.publisher.nil?
-        dc << {:type => :meta, :name => "DC.source", :content => item.source} unless item.source.nil?
-        dc << {:type => :meta, :name => "DC.date.issued", :content => item.created_at} unless item.created_at.nil?
-        dc << {:type => :meta, :name => "DC.date.modified", :content => item.updated_at} unless item.updated_at.nil?
-        dc << {:type => :meta, :name => "DC.identifier", :content => item.url} unless item.url.nil?
-        dc.insert(0, {:type => :link, :rel  => "schema.DC", :href => "http://purl.org/dc/elements/1.1/"}) if dc.length > 0
+        dc << {:tag => :meta, :name => "DC.title", :content => item.heading} unless item.heading.nil?
+        dc << {:tag => :meta, :name => "DC.subject", :content => item.subject} unless item.subject.nil?
+        dc << {:tag => :meta, :name => "DC.description", :content => item.summary} unless item.summary.nil?
+        dc << {:tag => :meta, :name => "DC.contributor", :content => item.contributor} unless item.contributor.nil?
+        dc << {:tag => :meta, :name => "DC.creator", :content => item.creator} unless item.creator.nil?
+        dc << {:tag => :meta, :name => "DC.publisher", :content => item.publisher} unless item.publisher.nil?
+        dc << {:tag => :meta, :name => "DC.source", :content => item.source} unless item.source.nil?
+        dc << {:tag => :meta, :name => "DC.date.issued", :content => item.created_at} unless item.created_at.nil?
+        dc << {:tag => :meta, :name => "DC.date.modified", :content => item.updated_at} unless item.updated_at.nil?
+        dc << {:tag => :meta, :name => "DC.identifier", :content => request.protocol + request.host_with_port + item.url} unless item.url.nil?
+        dc.insert(0, {:tag => :link, :rel  => "schema.DC", :href => "http://purl.org/dc/elements/1.1/"}) if dc.length > 0
       end
       dc
     end
 
-    include ActionView::Helpers::TagHelper
-
-    def format_dublin_core(dc)
-      dc.collect do |dc_item|
-        if dc_item[:type] == :meta
-          tag(:meta, :name => dc_item[:name], :content => dc_item[:content])
-        elsif dc_item[:type] == :link
-          tag(:link, :rel => dc_item[:rel], :href => dc_item[:href])
-        end
-      end.join("\r\n")
-    end
-    
     def prerender_containers
       begin
         @sublayout = Content::Sublayout.find_by_path(current_content_item.template.sublayout)

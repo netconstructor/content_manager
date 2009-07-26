@@ -5,7 +5,7 @@ class Component
     index = 0
     @components ||= Dir.glob("app/controllers/components/**/*.rb").collect {|path|
       path = path.gsub("app/controllers/components/", "")
-    }.compact.collect {|path|
+    }.compact.sort.collect {|path|
       returning Component.new(path) do |component|
         component.id = index = index + 1
       end

@@ -53,8 +53,40 @@ module Content
         end
       end
 
+      def map_operator(op)
+        {
+          :streq => "=",
+          :strinc => "includes",
+          :strbw => "begins with",
+          :strew => "ends with",
+          :strand => "includes all",
+          :stror => "includes any",
+          :stroreq => "includes one",
+          :strrx => "matches",
+          :numeq => "=",
+          :numgt => ">",
+          :numge => ">=",
+          :numlt => "<",
+          :numle => "<=",
+          :numbt => "between",
+          :numoreq => "any",
+          :ftsph => "contains phrase",
+          :ftsand => "contains all",
+          :ftsor => "contains any",
+          :ftsex => "contains"
+        }[op]
+      end
+      
       def map_conditions(conditions)
-        conditions.reject{|k,v| k == :content_type}.collect{|k,v| "#{k.to_s.gsub('__', '')} = #{v.inspect}"}.join(" AND ")
+        conditions.reject {|k,v| 
+          k == :content_type
+        }.collect {|k,v| 
+          if v.is_a?(Hash)
+            "#{k.to_s.gsub('__', '')} #{map_operator(v.keys.first)} #{v.values.first.inspect}"
+          else
+            "#{k.to_s.gsub('__', '')} = #{v.inspect}"
+          end
+        }.join(" AND ")
       end
       
       def format_log_entry(message, dump = nil)
