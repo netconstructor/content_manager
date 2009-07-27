@@ -79,7 +79,12 @@ module Content
           options[:conditions] ||= {}
           options[:conditions][:content_type] = name
         end
-        wrap_result which, connection.run_query(self, options)
+        
+        if options[:id_only]
+          wrap_result_id which, connection.run_query_for_ids(self, options)
+        else
+          wrap_result which, connection.run_query(self, options)
+        end
       elsif id.is_a? Array
         id.collect {|one_id| find_by_id one_id}.compact
       elsif options.keys.length <= 1
@@ -90,7 +95,12 @@ module Content
         else
           options[:conditions] = {:__id => id}
         end
-        wrap_result which, connection.run_query(self, options)
+        
+        if options[:id_only]
+          wrap_result_id which, connection.run_query_for_ids(self, options)
+        else
+          wrap_result which, connection.run_query(self, options)
+        end
       end
     end
 
@@ -123,6 +133,11 @@ module Content
       WillPaginate::Collection.create(page, per_page, total_entries) { |pager| pager.replace arr }
     end
 
+    def get(ids)
+      ids = [ids] unless ids.is_a?(Array)
+      wrap_result :all, connection.mget(self, ids)
+    end
+
     def find_by_id(id)
       wrap_result :first, connection.get_record_by_id(self, id.to_i)
     end
@@ -134,24 +149,24 @@ module Content
       end
     end
 
-    def all
+    def all(options = {})
       if name == "Content::Item"
-        find :all
+        find :all, options
       else
-        find_all_by_content_type name
+        find_all_by_content_type name, options
       end
     end
 
-    def first
+    def first(options = {})
       if name == "Content::Item"
-        find :first
+        find :first, options
       else
-        find_by_content_type name
+        find_by_content_type name, options
       end
     end
 
-    def last
-      all.last
+    def last(options = {})
+      all(options).last
     end
 
     def method_missing(name, *arguments, &block)
@@ -207,6 +222,17 @@ module Content
           attrs[:content_type].to_s.camelize.constantize.new(attrs)
         elsif self == Content::Item
           Content::Item.new(attrs)
+        end
+      end
+    end
+
+    def wrap_result_id(which, attrs)
+      unless attrs.nil?
+        attrs = [attrs] unless attrs.is_a?(Array)
+        case which
+        when :first then attrs.first
+        when :last then attrs.last
+        else attrs
         end
       end
     end

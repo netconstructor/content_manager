@@ -17,12 +17,12 @@ module Content
         end
       end
 
-      def log_select(query_options, table_name, ms)
+      def log_select(query_options, table_name, columns, ms)
         if @logger && @logger.debug?
           table_name ||= 'Content::Item'
           table_name = query_options[:conditions][:content_type] if query_options.has_key? :conditions and query_options[:conditions].has_key? :content_type
           table_name = table_name.to_s.gsub('::','').tableize
-          sql = "SELECT * FROM #{table_name}"
+          sql = "SELECT #{columns} FROM #{table_name}"
           sql = sql + " WHERE #{map_conditions(query_options[:conditions])}" if query_options.has_key? :conditions
           sql = sql + " ORDER BY #{query_options[:order].inspect}" if query_options.has_key? :order
           sql = sql + " LIMIT #{query_options[:limit]}" if query_options.has_key? :limit

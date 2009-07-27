@@ -45,7 +45,7 @@ module Content
       define_method(name) do
         ary = self[name]
         if ary.nil?
-          self[name] = ary = (self.send(name_ids) || []).collect {|id| self.class.find(id.to_i) }
+          self[name] = ary = self.class.get(self.send(name_ids) || [])
           instance_variable_set("@#{name}_loaded".to_sym, true)
           self[name_ids] = nil
         end

@@ -31,34 +31,33 @@ module Content
         end
       end
       
-      # :streq - for string which is equal to the expression
-      # :strinc - for string which is included in the expression
-      # :strbw - for string which begins with the expression
-      # :strew - for string which ends with the expression
-      # :strand - for string which includes all tokens in the expression
-      # :stror - for string which includes at least one token in the expression
-      # :stroreq - for string which is equal to at least one token in the expression
-      # :strrx - for string which matches regular expressions of the expression
-      # :numeq - for number which is equal to the expression
-      # :numgt - for number which is greater than the expression
-      # :numge - for number which is greater than or equal to the expression
-      # :numlt - for number which is less than the expression
-      # :numle - for number which is less than or equal to the expression
-      # :numbt - for number which is between two tokens of the expression
-      # :numoreq - for number which is equal to at least one token in the expression
-      # :ftsph - for full-text search with the phrase of the expression
-      # :ftsand - for full-text search with all tokens in the expression
-      # :ftsor - for full-text search with at least one token in the expression
-      # :ftsex - for full-text search with the compound expression. 
-
       def run_query(klass, query_options)
         results = nil
         ms = Benchmark.ms do
           query = prepare_query klass, query_options
           results = query.get
         end
-        log_select(query_options, klass, ms)
+        log_select(query_options, klass, "*", ms)
         results
+      end
+
+      def run_query_for_ids(klass, query_options)
+        results = nil
+        ms = Benchmark.ms do
+          query = prepare_query klass, query_options
+          results = query.search.collect(&:to_i)
+        end
+        log_select(query_options, klass, "id", ms)
+        results
+      end
+
+      def mget(klass, ids)
+        results = nil
+        ms = Benchmark.ms do
+          results = @connection.mget ids
+        end
+        log_select({:conditions => {:id => ids}}, klass, "*", ms)
+        ids.collect {|id| results[id.to_s] }
       end
 
       def count(klass, query_options)
@@ -76,7 +75,7 @@ module Content
         ms = Benchmark.ms do
           record = @connection[id]
         end
-        log_select({:conditions => {:__id => id, :content_type => klass.name.to_s}}, klass, ms)
+        log_select({:conditions => {:__id => id, :content_type => klass.name.to_s}}, klass, "*", ms)
         record
       end
 

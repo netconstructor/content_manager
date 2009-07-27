@@ -45,14 +45,23 @@ module Content
       end
     end
 
+    #this is diffrent to the instance method create_or_update
+    def update_or_create(attributes = {})
+      id = attributes.delete(:id)
+      conditions = attributes.delete(:conditions)
+
+      returning (id && find_by_id(id)) || find(:first, :conditions => conditions) || new do |record|
+        attributes.each_pair { |key, value| record[key] = value }
+        record.save!
+      end
+    end
+
     def update(id, attributes)
       if id.is_a?(Array)
         idx = -1
         id.collect { |one_id| idx += 1; update(one_id, attributes[idx]) }
       else
-        object = find(id)
-        object.update_attributes(attributes)
-        object
+        returning find(id) { |object| object.update_attributes(attributes) }
       end
     end
 

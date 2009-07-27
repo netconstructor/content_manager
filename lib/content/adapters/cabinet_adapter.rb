@@ -27,8 +27,14 @@ module Content
             (query_options[:order] || []).each {|order| q.order_by order }
           }.collect {|r| r.symbolize_keys }
         end
-        log_select(query_options, klass, ms)
+        log_select(query_options, klass, "*", ms)
         results
+      end
+
+      def run_query_for_ids(klass, query_options)
+      end
+
+      def mget(klass, ids)
       end
 
       def count(klass, query_options)
@@ -40,7 +46,7 @@ module Content
         ms = Benchmark.ms do
           record = @connection[id.to_s].symbolize_keys
         end
-        log_select({:conditions => {:__id => id, :content_type => klass.name.to_s}}, klass, ms)
+        log_select({:conditions => {:__id => id, :content_type => klass.name.to_s}}, klass, "*", ms)
         record
       end
 
