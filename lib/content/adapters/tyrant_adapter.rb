@@ -52,12 +52,16 @@ module Content
       end
 
       def mget(klass, ids)
-        results = nil
-        ms = Benchmark.ms do
-          results = @connection.mget ids
+        if ids.length > 0
+          results = nil
+          ms = Benchmark.ms do
+            results = @connection.mget ids
+          end
+          log_select({:conditions => {:id => ids}}, klass, "*", ms)
+          ids.collect {|id| results[id.to_s] }
+        else
+          []
         end
-        log_select({:conditions => {:id => ids}}, klass, "*", ms)
-        ids.collect {|id| results[id.to_s] }
       end
 
       def count(klass, query_options)
