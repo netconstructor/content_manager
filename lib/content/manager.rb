@@ -18,6 +18,8 @@ module Content
         elsif !Thread.current[:current_item_loaded]
           Thread.current[:current_item_loaded] = true
           Thread.current[:current_item] = Content::Item.find_by_url(url)
+        else
+          Thread.current[:current_item]
         end
       end
     end
