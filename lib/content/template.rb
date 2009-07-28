@@ -6,6 +6,10 @@ module Content
     validates_length_of :heading, :minimum => 3
     validates_presence_of :sublayout
 
+    def self.all_by_heading
+      all(:order => "heading")
+    end
+
     def template
       self
     end

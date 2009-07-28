@@ -199,16 +199,25 @@ module Content
     end
 
     def polymorphic_finder(which, name, arguments)
-      find which, :conditions => hash_zip(name.split(/_and_/).collect(&:to_sym), arguments)
+      conditions = {}
+      name.split(/_and_/).each {|sym| conditions[sym.to_sym] = arguments.shift }
+      arguments.first.is_a?(Hash) ? options = arguments.first : options = {}
+      if options.has_key?(:conditions)
+        options[:conditions].merge!(conditions)
+      else
+        options.merge!(:conditions => conditions)
+      end
+      find which, options
     end
 
     def polymorphic_pager(name, arguments)
-      names = name.split(/_and_/)
-      options = arguments.length > names.length ? arguments.last : {}
-      if options.has_key? :conditions
-        options[:conditions].merge! hash_zip(names, arguments)
+      conditions = {}
+      name.split(/_and_/).each {|sym| conditions[sym.to_sym] = arguments.shift }
+      arguments.first.is_a?(Hash) ? options = arguments.first : options = {}
+      if options.has_key?(:conditions)
+        options[:conditions].merge!(conditions)
       else
-        options.merge!({:conditions => hash_zip(names, arguments)})
+        options.merge!(:conditions => conditions)
       end
       paginate options
     end

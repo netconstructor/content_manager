@@ -1,5 +1,6 @@
 class Component
-  attr_accessor :id, :name, :controller
+  include ActionView::Helpers::AssetTagHelper
+  attr_accessor :id, :name, :controller, :thumbnail
 
   def self.all
     index = 0
@@ -15,16 +16,20 @@ class Component
   def self.find(index)
     all[index.to_i - 1]
   end
-  
-  def self.find_by_category(category)
-    @categories ||= all.inject({}) {|h, obj| obj.controller.component_categories?.each {|i| h[i] ||= []; h[i] << obj.controller }; h }
-    @categories[category] ||= []
+
+  def self.categories
+    all.inject({}) {|h, obj| obj.get_controller.component_categories?.each {|i| h[i] ||= []; h[i] << obj }; h }
   end
 
   def initialize(path)
     @name = path.gsub('.rb', '')
-    @controller = "components/#{@name}".camelize.constantize
+    @controller = "components/#{@name}".camelize.constantize.to_s
     @name.gsub!(/_controller$/, '')
+    @thumbnail = image_path("/images/components/#{@name}.png")
+  end
+  
+  def get_controller
+    @controller.constantize
   end
   
   def to_param
