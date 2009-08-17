@@ -174,13 +174,13 @@ module Content
     def perform_save
       saved_attributes = {}
       @attributes[:version] = @attributes[:updated_at].strftime("%Y%m%d%H%M%S")
-      @attributes.each {|k,v| 
+      @attributes.each do |k,v| 
         saved_attributes[k] = case
           when v.is_a?(String): v
           when v.is_a?(Symbol): v.to_s
           else v.to_json 
-          end unless self.class.ignored_attributes.include?(k) 
-      }
+          end unless self.class.ignored_attributes.include?(k) || v.nil?
+      end
       self.class.connection.save_record(self.class, self.id, saved_attributes)
       @new_record = false
       changed_attributes.clear
@@ -194,6 +194,7 @@ end
 
 Content::Item.class_eval do
   include Content::ItemDirtyMethods
+  extend Content::ItemScopeClassMethods
   include ActiveRecord::Validations
   include ActiveRecord::Callbacks
 end

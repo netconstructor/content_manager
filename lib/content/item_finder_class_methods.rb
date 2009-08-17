@@ -135,7 +135,9 @@ module Content
 
     def get(ids)
       ids = [ids] unless ids.is_a?(Array)
-      wrap_result :all, connection.mget(self, ids)
+      results = connection.mget(self, ids)
+      results = results.reject {|item| item["content_type"] != name } unless name == "Content::Item"
+      wrap_result :all, results
     end
 
     def find_by_id(id)

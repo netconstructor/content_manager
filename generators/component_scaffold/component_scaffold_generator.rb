@@ -43,7 +43,6 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
       m.directory(File.join('app/models', controller_class_path))
       m.directory(File.join('app/controllers', controller_class_path))
       m.directory(File.join('app/views', controller_class_path, controller_file_name))
-      m.directory(File.join('public/stylesheets', controller_class_path))
 
       for action in scaffold_views
         m.template(
@@ -52,15 +51,10 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
         )
       end
 
-      # Layout and stylesheet.
-      m.template('style.css', "public/stylesheets/#{controller_class_path}/#{file_name}.css")
-
       m.template(
         'controller.rb', File.join('app/controllers', controller_class_path, "#{controller_file_name}_controller.rb")
       )
 
-      m.route_resources table_name
-      
       m.template 'model.rb', File.join("app/models/#{controller_class_path}", class_path, "#{file_name}.rb")
     end
   end
@@ -75,7 +69,7 @@ class ComponentScaffoldGenerator < Rails::Generator::NamedBase
     end
 
     def scaffold_views
-      %w[ index show new edit ]
+      %w[ _form show ]
     end
 
     def model_name

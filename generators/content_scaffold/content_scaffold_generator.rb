@@ -58,8 +58,6 @@ class ContentScaffoldGenerator < Rails::Generator::NamedBase
         'controller.rb', File.join('app/controllers', controller_class_path, "#{controller_file_name}_controller.rb")
       )
 
-      m.route_resources table_name
-      
       m.template 'model.rb', File.join('app/models/content', class_path, "#{file_name}.rb")
     end
   end

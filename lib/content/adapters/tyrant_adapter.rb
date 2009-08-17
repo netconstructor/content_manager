@@ -23,8 +23,12 @@ module Content
           }
           (query_options[:order] || []).each { |order|
             direction = :strasc
-            field = $1, direction = $2 if order =~ /^(.+)(ASC|DESC)?$/i
-            direction = "str#{direction.to_s.downcase}".to_sym unless direction.nil?
+            field = order
+            if field =~ /(ASC|DESC)$/i
+              direction = "str#{$1.downcase}".to_sym
+              field.gsub!(/\s*(ASC|DESC)?$/i, '')
+            end
+            puts "q.order_by(#{field}, #{direction})"
             q.order_by(field, direction)
           }
           q.limit(query_options[:limit], query_options[:offset])

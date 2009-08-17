@@ -123,7 +123,7 @@ module Content
         val = __send__(method, attr)
         if val.nil?
           nil
-        elsif val.is_a? Symbol
+        elsif val.is_a? Symbol or val.is_a? Fixnum
           val
         else
           val.dup

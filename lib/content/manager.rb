@@ -1,7 +1,7 @@
 module Content
   module Manager
     def self.load_content_item(params)
-      url = params["content_item_url"]
+      url = params[:content_item_url]
       unless url.nil?
         if url.is_a? Array
           url = "/#{url.join('/')}"
@@ -10,17 +10,18 @@ module Content
           params[:format] = $2
           url = $1
         end
-        params["content_item_url"] = url
-        if Thread.current[:current_item_url] != url 
+        params[:content_item_url] = url
+        if Thread.current[:current_item_url] != url or !Thread.current[:current_item_loaded]
           Thread.current[:current_item_url] = url
           Thread.current[:current_item_loaded] = true
-          Thread.current[:current_item] = Content::Item.find_by_url(url)
-        elsif !Thread.current[:current_item_loaded]
-          Thread.current[:current_item_loaded] = true
-          Thread.current[:current_item] = Content::Item.find_by_url(url)
-        else
-          Thread.current[:current_item]
+          if params[:version].blank?
+            Thread.current[:current_item] = Content::Item.find_by_url_and_status(url, :published)
+            Thread.current[:current_item] ||= Content::Item.find_by_url_and_status(url, :new)  # TODO: Put in place for debugging
+          else
+            Thread.current[:current_item] = Content::Item.find_by_url_and_version(url, params[:version])
+          end
         end
+        Thread.current[:current_item]
       end
     end
 
@@ -40,7 +41,7 @@ module Content
 
   protected
     def head_profile
-      'profile="http://dublincore.org/documents/2008/08/04/dc-html/"'
+      ' profile="http://dublincore.org/documents/2008/08/04/dc-html/"'
     end
 
     def get_dublin_core(item)
@@ -50,9 +51,9 @@ module Content
         dc << {:tag => :meta, :name => "DC.subject", :content => item.subject} unless item.subject.nil?
         dc << {:tag => :meta, :name => "DC.description", :content => item.summary} unless item.summary.nil?
         dc << {:tag => :meta, :name => "DC.contributor", :content => item.contributor} unless item.contributor.nil?
-        dc << {:tag => :meta, :name => "DC.creator", :content => item.creator} unless item.creator.nil?
+        dc << {:tag => :meta, :name => "DC.creator", :content => item.author} unless item.creator.nil?
         dc << {:tag => :meta, :name => "DC.publisher", :content => item.publisher} unless item.publisher.nil?
-        dc << {:tag => :meta, :name => "DC.source", :content => item.source} unless item.source.nil?
+        dc << {:tag => :meta, :name => "DC.source", :content => item.source_url} unless item.source_url.nil?
         dc << {:tag => :meta, :name => "DC.date.issued", :content => item.created_at} unless item.created_at.nil?
         dc << {:tag => :meta, :name => "DC.date.modified", :content => item.updated_at} unless item.updated_at.nil?
         dc << {:tag => :meta, :name => "DC.identifier", :content => request.protocol + request.host_with_port + item.url} unless item.url.nil?
@@ -83,6 +84,12 @@ module Content
     # url_options the options that would be passed to url_for
     #
     def render_component(url_options)
+      id = url_options[:id]
+      params.each_pair do |k, v|
+        if k.match("(.+)_#{id}_(.+)")
+          url_options[$2] = v
+        end
+      end
       url = url_for(url_options)
       querystring = URI.parse(url).query
 
@@ -107,7 +114,11 @@ module Content
 
       resp = ActionController::Routing::Routes.call(env)
       raise resp[2].body unless resp[0] == 200
-      resp[2].body
+      after_render_component(resp)[2].body
+    end
+    
+    def after_render_component(resp)
+      resp
     end
 
     #

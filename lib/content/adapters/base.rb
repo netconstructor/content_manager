@@ -9,7 +9,8 @@ module Content
           table_name = query_options[:conditions][:content_type] if query_options.has_key? :conditions and query_options[:conditions].has_key? :content_type
           table_name = table_name.to_s.gsub('::','').tableize
           sql = "SELECT COUNT(*) FROM #{table_name}"
-          sql = sql + " WHERE #{map_conditions(query_options[:conditions])}" if query_options.has_key? :conditions
+          conds = map_conditions(query_options[:conditions]) if query_options.has_key? :conditions
+          sql = sql + " WHERE #{conds}" unless conds.blank?
           sql = sql + " ORDER BY #{query_options[:order].inspect}" if query_options.has_key? :order
           sql = sql + " LIMIT #{query_options[:limit]}" if query_options.has_key? :limit
           name = '%s (%.1fms)' % [table_name.classify, ms]
@@ -23,7 +24,8 @@ module Content
           table_name = query_options[:conditions][:content_type] if query_options.has_key? :conditions and query_options[:conditions].has_key? :content_type
           table_name = table_name.to_s.gsub('::','').tableize
           sql = "SELECT #{columns} FROM #{table_name}"
-          sql = sql + " WHERE #{map_conditions(query_options[:conditions])}" if query_options.has_key? :conditions
+          conds = map_conditions(query_options[:conditions]) if query_options.has_key? :conditions
+          sql = sql + " WHERE #{conds}" unless conds.blank?
           sql = sql + " ORDER BY #{query_options[:order].inspect}" if query_options.has_key? :order
           sql = sql + " LIMIT #{query_options[:limit]}" if query_options.has_key? :limit
           name = '%s (%.1fms)' % [table_name.classify, ms]
@@ -78,7 +80,7 @@ module Content
       end
       
       def map_conditions(conditions)
-        conditions.reject {|k,v| 
+        conditions.reject {|k,v|
           k == :content_type
         }.collect {|k,v| 
           if v.is_a?(Hash)

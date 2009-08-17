@@ -29,6 +29,10 @@ module Content
       defaults << name
       defaults.shift.to_s.humanize
     end
+    
+    def base_class
+      self
+    end
 
     def human_attribute_name(attr_name)
       attr_name.to_s.humanize

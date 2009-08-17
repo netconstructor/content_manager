@@ -18,7 +18,7 @@ class Component
   end
 
   def self.categories
-    all.inject({}) {|h, obj| obj.get_controller.component_categories?.each {|i| h[i] ||= []; h[i] << obj }; h }
+    all.inject({}) {|h, obj| obj.get_controller.component_config?[:categories].each {|i| h[i] ||= []; h[i] << obj } if obj.get_controller.component_config?[:categories] != nil; h }
   end
 
   def initialize(path)
@@ -26,6 +26,7 @@ class Component
     @controller = "components/#{@name}".camelize.constantize.to_s
     @name.gsub!(/_controller$/, '')
     @thumbnail = image_path("/images/components/#{@name}.png")
+    @containers = get_controller.component_config?[:containers]
   end
   
   def get_controller

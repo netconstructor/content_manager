@@ -13,74 +13,133 @@ module Content
       name_ids = "#{name.to_s.singularize}_ids".to_sym
       ignored_attributes << name
       serialized_attributes << name_ids
+      content_type = (options[:content_type] && options[:content_type].is_a?(String) && options[:content_type].constantize) || 
+        (options[:content_type] && options[:content_type]) || Content::Item
 
-      define_method(name_ids) do
-        if instance_variable_get("@#{name}_loaded".to_sym)
-          self[name_ids] = self[name].collect(&:id)
-          self[name] = nil
+      if options.has_key?(:foreign_key)
+        ignored_attributes << name_ids
+
+        define_method(name_ids) do |*args|
           instance_variable_set("@#{name}_loaded".to_sym, false)
-        else
-          if self[name_ids].nil?
-            self[name_ids] = []
+          self[name] = nil
+          opts = args.first || {}
+          opts[:conditions] ||= {}
+          opts[:conditions][options[:foreign_key]] = self.id
+          opts[:id_only] = true
+          if args.length == 0
+            self[name_ids] ||= content_type.find :all, opts
           else
-            self[name_ids] = ActiveSupport::JSON.decode(self[name_ids]) if self[name_ids].is_a? String
+            content_type.find :all, opts
           end
         end
-        self[name_ids]
-      end
 
-      define_method("#{name_ids}=".to_sym) do |val|
-        self[name] = nil
-        instance_variable_set("@#{name}_loaded".to_sym, false)
-
-        if val.is_a? Content::Item
-          self[name_ids] = [val.id.to_i] 
-        elsif !val.is_a? Array
-          self[name_ids] = [val.to_i]
-        else
-          self[name_ids] = val
-        end
-      end
-
-      define_method(name) do
-        ary = self[name]
-        if ary.nil?
-          self[name] = ary = self.class.get(self.send(name_ids) || [])
+        define_method(name) do |*args|
           instance_variable_set("@#{name}_loaded".to_sym, true)
           self[name_ids] = nil
+          opts = args.first || {}
+          opts[:conditions] ||= {}
+          opts[:conditions][options[:foreign_key]] = self.id
+          if args.length == 0
+            self[name] ||= content_type.find :all, opts
+          else
+            content_type.find :all, opts
+          end
         end
-        ary
-      end
+      else
+        define_method(name_ids) do
+          if instance_variable_get("@#{name}_loaded".to_sym)
+            self[name_ids] = self[name].collect(&:id)
+            self[name] = nil
+            instance_variable_set("@#{name}_loaded".to_sym, false)
+          else
+            if self[name_ids].nil?
+              self[name_ids] = []
+            else
+              self[name_ids] = ActiveSupport::JSON.decode(self[name_ids]) if self[name_ids].is_a? String
+            end
+          end
+          self[name_ids]
+        end
 
-      define_method("#{name}=".to_sym) do |val|
-        if val.is_a? Array
-          instance_variable_set("@#{name}_loaded".to_sym, true)
-          self[name] = val
-          self[name_ids] = nil
-        elsif val.nil?
-          instance_variable_set("@#{name}_loaded".to_sym, false)
+        define_method("#{name_ids}=".to_sym) do |val|
           self[name] = nil
-          self[name_ids] = nil
-        end
-      end
+          instance_variable_set("@#{name}_loaded".to_sym, false)
+          if val.nil? or val.is_a? Array
+            self[name_ids] = val
+          elsif val.is_a? Content::Item
+            self[name_ids] = [val.id.to_i] 
+          else
+            self[name_ids] = [val.to_i]
+          end
+        end unless options[:readonly]
 
-      define_method("#{name}_loaded".to_sym) do
-        instance_variable_get("@#{name}_loaded".to_sym)
+        define_method(name) do
+          ary = self[name]
+          if ary.nil?
+            self[name] = ary = content_type.get(self.send(name_ids) || [])
+            instance_variable_set("@#{name}_loaded".to_sym, true)
+            self[name_ids] = nil
+          end
+          ary
+        end
+
+        define_method("#{name}=".to_sym) do |val|
+          if val.nil?
+            instance_variable_set("@#{name}_loaded".to_sym, false)
+            self[name] = nil
+            self[name_ids] = nil
+          elsif val.is_a? Array
+            instance_variable_set("@#{name}_loaded".to_sym, true)
+            self[name] = val
+            self[name_ids] = nil
+          end
+        end unless options[:readonly]
+
+        define_method("#{name}_loaded".to_sym) do
+          instance_variable_get("@#{name}_loaded".to_sym)
+        end
       end
     end
 
     def belongs_to(name, options = {})
       raise "name must be singular" unless name.to_s == name.to_s.singularize
       name_id = "#{name}_id".to_sym
+      other_ids = "#{options[:foreign_key].to_s.singularize}_ids".to_sym if options.has_key?(:foreign_key)
       ignored_attributes << name
       serialized_attributes << name_id
+      content_type = (options[:content_type] && options[:content_type].is_a?(String) && options[:content_type].constantize) || 
+        (options[:content_type] && options[:content_type]) || Content::Item
 
       define_method(name_id) do
         self[name_id].to_i
       end
 
+      define_method(name) do
+        self[name] ||= content_type.find(self[name_id].to_i) unless self[name_id].to_i == 0
+      end
+
       define_method("#{name_id}=".to_sym) do |val|
-        if val.is_a? Content::Item
+        # Remove from other list
+        if !other_ids.nil?
+          other = self.send(name)
+          if !other.nil?
+            other.send(other_ids).reject! {|item| item == self.id }
+            other.save!
+          end
+        end
+
+        if val.nil?
+          self[name] = nil
+          self[name_id] = nil
+        elsif val.is_a? content_type
+          if !other_ids.nil?
+            save! if new_record?
+            val.send(other_ids) << self.id
+            val.send(other_ids).uniq!
+            val.save!
+          elsif val.new_record?
+            val.save!
+          end
           self[name] = val
           self[name_id] = val.id.to_i 
         else
@@ -88,15 +147,32 @@ module Content
         end
       end
 
-      define_method(name) do
-        self[name] ||= self.class.find(self[name_id].to_i)
-      end
-
       define_method("#{name}=".to_sym) do |val|
-        if val.is_a? Content::Item
-          val.save! if val.new_record?
+        # Remove from other list
+        if !other_ids.nil?
+          other = self.send(name)
+          if !other.nil?
+            other.send(other_ids).reject! {|item| item == self.id }
+            other.save!
+          end
+        end
+
+        if val.nil?
+          self[name] = nil
+          self[name_id] = nil
+        elsif val.is_a? content_type
+          if !other_ids.nil?
+            save! if new_record?
+            val.send(other_ids) << self.id
+            val.send(other_ids).uniq!
+            val.save!
+          elsif val.new_record?
+            val.save!
+          end
           self[name] = val
           self[name_id] = val.id.to_i
+        else
+          self[name_id] = val.to_i
         end
       end
     end
