@@ -1,11 +1,27 @@
 module Content
   module ItemAssociationClassMethods
     def ignored_attributes
-      @ignored_attributes ||= []
+      @ignored_attributes ||= {}
+      @ignored_attributes[self.name] ||= self.superclass.ignored_attributes.dup if self.superclass.respond_to?(:ignored_attributes)
+      @ignored_attributes[self.name] ||= []
     end
 
     def serialized_attributes
-      @serialized_attributes ||= []
+      @serialized_attributes ||= {}
+      @serialized_attributes[self.name] ||= self.superclass.serialized_attributes.dup if self.superclass.respond_to?(:serialized_attributes)
+      @serialized_attributes[self.name] ||= []
+    end
+
+    def field_attributes
+      @field_attributes ||= {}
+      @field_attributes[self.name] ||= self.superclass.field_attributes.dup if self.superclass.respond_to?(:field_attributes)
+      @field_attributes[self.name] ||= {}
+    end
+
+    def facet_attributes
+      @facet_attributes ||= {}
+      @facet_attributes[self.name] ||= self.superclass.facet_attributes.dup if self.superclass.respond_to?(:facet_attributes)
+      @facet_attributes[self.name] ||= []
     end
 
     def has_many(name, options = {})
@@ -185,6 +201,7 @@ module Content
       names.each do |name|
         serialized_attributes << name
         field_klass = field_type.to_s.camelcase.constantize
+        field_attributes[name] = field_klass
 
         define_method(name) do
           if !self[name].is_a?(field_klass) and self[name].is_a? String and !self[name].blank?
@@ -224,7 +241,12 @@ module Content
     def fields(*names)
       field names
     end
-    
+
+    def facet(name)
+      field name, :array
+      facet_attributes << name
+    end
+
     def index(name, index_type = :lexical)
       self.connection.set_index name, index_type
     end

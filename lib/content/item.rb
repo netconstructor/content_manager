@@ -3,6 +3,7 @@ module Content
     extend ItemAssociationClassMethods
     extend ItemFinderClassMethods
     extend ItemClassMethods
+    include Comparable
     
     fields :content_type, :version, :url, :heading, :summary, :keywords, :subject
     fields :contributor, :creator, :publisher, :source, :priority
@@ -12,6 +13,10 @@ module Content
     field :changefreq, :symbol
     
     belongs_to :template
+
+    def <=>(that)
+      self.heading <=> that.heading
+    end
 
     def initialize(attrs = {})
       @attributes = { :content_type => self.class.name.to_s }
@@ -49,6 +54,12 @@ module Content
       end
       self
     end
+    
+    def unversioned_update!
+      flatten_associations
+      perform_save
+      nil
+    end
 
     alias respond_to_without_attributes? respond_to?
 
@@ -85,6 +96,10 @@ module Content
       @attributes[attr_name.to_sym]
     end
 
+    def read_attributes
+      @attributes
+    end
+
     def write_attribute(attr_name, value)
       sym = attr_name.to_sym
       if !new_record? and (@attributes[sym].nil? or @attributes[sym] != value)
@@ -116,6 +131,33 @@ module Content
       save
     end
 
+    def tag_fields
+      [:keywords]
+    end
+
+    def tags(which = nil)
+      fields = self.__send__(which) unless which.nil?
+      (fields || self.tag_fields).collect do |field| 
+        val = __send__(field)
+        if val.nil?
+          []
+        elsif val.is_a?(Array)
+          val
+        elsif val.is_a?(String)
+          val.split(",").collect(&:strip)
+        else
+          [val.to_s]
+        end
+      end.flatten.uniq
+    end
+
+    def facets
+      self.tag_fields.inject({}) do |h, field| 
+        h[field] = __send__(field) ? __send__(field).split(",").collect(&:strip) : []
+        h 
+      end
+    end
+
     def method_missing(name, *arguments)
       if arguments.length == 0
         self[name] if @attributes.has_key? name
@@ -124,6 +166,19 @@ module Content
       else
         super
       end
+    end
+
+    def searchable?
+      self.read_attribute(:searchable) || true
+    end
+
+    def searchable_fields
+      filtered_fields = [:source_id, :source_modified, :source_type, :source_url, :source_urls, :status, :template_id, :warn_level, :client_id, :__id, :photo_ids, :page_ids, :sublayout]
+      self.class.field_attributes.keys - filtered_fields
+    end
+
+    def cache_key
+      version || updated_at.to_s
     end
 
     def to_param
@@ -166,20 +221,24 @@ module Content
       end
     end
 
+    def logger
+      ActiveRecord::Base.logger
+    end
+
   private
     def flatten_associations
       self.class.ignored_attributes.each {|k| self["#{k.to_s.singularize}_ids"] = self[k].collect(&:id) if instance_variable_get("@#{k}_loaded".to_sym) }
     end
-  
+
     def perform_save
       saved_attributes = {}
       @attributes[:version] = @attributes[:updated_at].strftime("%Y%m%d%H%M%S")
       @attributes.each do |k,v| 
-        saved_attributes[k] = case
-          when v.is_a?(String): v
-          when v.is_a?(Symbol): v.to_s
-          else v.to_json 
-          end unless self.class.ignored_attributes.include?(k) || v.nil?
+        case
+        when v.is_a?(String): saved_attributes[k] = v unless v.blank?
+        when v.is_a?(Symbol): saved_attributes[k] = v.to_s
+        else saved_attributes[k] = v.to_json 
+        end unless self.class.ignored_attributes.include?(k) || v.nil?
       end
       self.class.connection.save_record(self.class, self.id, saved_attributes)
       @new_record = false
@@ -197,4 +256,13 @@ Content::Item.class_eval do
   extend Content::ItemScopeClassMethods
   include ActiveRecord::Validations
   include ActiveRecord::Callbacks
+end
+
+if defined? RSolr
+  Content::Item.send(:extend, Content::Solr::ClassMethods)
+end
+
+if defined? Paperclip
+  Content::Item.send(:include, Paperclip)
+  File.send(:include, Paperclip::Upfile)
 end

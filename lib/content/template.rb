@@ -15,7 +15,7 @@ module Content
     end
 
     def set_container(name, contents)
-      @attributes[name] = ActiveSupport::JSON.encode(contents)
+      @attributes[name] = contents.is_a?(String) ? ActiveSupport::JSON.encode(contents) : contents
     end
 
     def get_container(name)
@@ -23,7 +23,7 @@ module Content
         []
       else
         ivar = "@#{name}_obj".to_sym
-        obj = instance_variable_get(ivar) or returning ActiveSupport::JSON.decode(self[name]) do
+        obj = instance_variable_get(ivar) or returning(self[name].is_a?(String) ? ActiveSupport::JSON.decode(self[name]) : self[name]) do
           instance_variable_set ivar, obj
         end
       end

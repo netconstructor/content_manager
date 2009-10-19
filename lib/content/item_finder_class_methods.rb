@@ -24,6 +24,7 @@ module Content
     # * <tt>:offset</tt> - An integer determining the offset from where the rows should be fetched. So at 5, it would skip rows 0 through 4.
     # * <tt>:select</tt> - By default, this is "*" as in "SELECT * FROM", but can be changed if you, for example, want to do a join but not
     #   include the joined columns. Takes a string with the SELECT SQL fragment (e.g. "id, name").
+    # * <tt>:fetch</tt> - An array of attribute names to pre-fetch.
     #
     # ==== Examples
     #
@@ -63,18 +64,20 @@ module Content
       options = {}
       which = args.shift
       if which.is_a? Symbol
+        which_specified = true
         given_options = args.shift
         options.merge!(given_options) unless given_options.nil?
       else
         id = which
         which = :first
+        which_specified = false
         given_options = args.shift
         options.merge!(given_options) unless given_options.nil?
       end
 
       options[:limit] = 1 if which == :first
 
-      if id.nil?
+      if which_specified
         unless name == "Content::Item"
           options[:conditions] ||= {}
           options[:conditions][:content_type] = name
@@ -86,14 +89,14 @@ module Content
           wrap_result which, connection.run_query(self, options)
         end
       elsif id.is_a? Array
-        id.collect {|one_id| find_by_id one_id}.compact
+        get id
       elsif options.keys.length <= 1
         find_by_id id
       else
         if options.has_key? :conditions
-          options[:conditions].merge!(:__id => id)
+          options[:conditions].merge!(:id => id)
         else
-          options[:conditions] = {:__id => id}
+          options[:conditions] = {:id => id}
         end
         
         if options[:id_only]
@@ -109,7 +112,7 @@ module Content
         options[:conditions] ||= {}
         options[:conditions].merge!(:content_type => name)
       end
-      options[:limit] = 10000
+      options[:limit] ||= 10000
       connection.count(self, options)
     end
     
@@ -230,7 +233,12 @@ module Content
       else
         attrs.symbolize_keys!
         if !attrs[:content_type].nil?
-          attrs[:content_type].to_s.camelize.constantize.new(attrs)
+          begin
+            attrs[:content_type].to_s.camelize.constantize.new(attrs)
+          rescue NameError
+            eval("class #{attrs[:content_type]} < Content::Item; end")
+            attrs[:content_type].to_s.camelize.constantize.new(attrs)
+          end
         elsif self == Content::Item
           Content::Item.new(attrs)
         end

@@ -1,6 +1,6 @@
 class Component
   include ActionView::Helpers::AssetTagHelper
-  attr_accessor :id, :name, :controller, :thumbnail
+  attr_accessor :id, :name, :controller, :thumbnail, :containers, :description, :require_content_item, :esi, :ttl, :requires_init, :editable
 
   def self.all
     index = 0
@@ -26,7 +26,14 @@ class Component
     @controller = "components/#{@name}".camelize.constantize.to_s
     @name.gsub!(/_controller$/, '')
     @thumbnail = image_path("/images/components/#{@name}.png")
-    @containers = get_controller.component_config?[:containers]
+    config = get_controller.component_config?
+    @containers = config[:containers] || []
+    @description = config[:description] || ""
+    @require_content_item = config[:require_content_item] || true
+    @esi = config[:esi] || true
+    @ttl = config[:ttl]
+    @requires_init = config[:requires_init] || false
+    @editable = config[:editable] || true
   end
   
   def get_controller

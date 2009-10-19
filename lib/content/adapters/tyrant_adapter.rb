@@ -15,22 +15,25 @@ module Content
         query_options[:offset] ||= -1
         returning @connection.query do |q|
           (query_options[:conditions] || {}).each { |key, value| 
+            key = :__id if key == :id
             if value.is_a? Hash
               q.condition(key, value.keys.first, value.values.first) 
             else
               q.condition(key, :streq, value) 
             end
           }
-          (query_options[:order] || []).each { |order|
+          unless query_options[:order].nil?
+            order = query_options[:order]
+            raise "Cannot sort by multiple columns" unless order.is_a?(String) or order.is_a?(Symbol)
+            raise "Cannot sort by multiple columns" if order.to_s.split(",").length > 1
             direction = :strasc
-            field = order
+            field = order.to_s.strip
             if field =~ /(ASC|DESC)$/i
               direction = "str#{$1.downcase}".to_sym
               field.gsub!(/\s*(ASC|DESC)?$/i, '')
             end
-            puts "q.order_by(#{field}, #{direction})"
-            q.order_by(field, direction)
-          }
+            q.order_by(field.to_sym, direction)
+          end
           q.limit(query_options[:limit], query_options[:offset])
         end
       end

@@ -1,7 +1,7 @@
 module Content
   module ItemClassMethods
     def establish_connection(options = {})
-      conn_options = ::YAML::load_file('config/content.yml')[::RAILS_ENV]
+      conn_options = ::YAML::load_file("#{RAILS_ROOT}/config/content.yml")[::RAILS_ENV]
       conn_options.merge!(options) unless options.nil?
       conn_type = conn_options[:type] || conn_options["type"] || :cabinet
       $adapter = "content/adapters/#{conn_type}_adapter".camelize.constantize.new(conn_options)
@@ -56,7 +56,7 @@ module Content
 
       returning (id && find_by_id(id)) || find(:first, :conditions => conditions) || new do |record|
         attributes.each_pair { |key, value| record[key] = value }
-        record.save!
+        record.save
       end
     end
 
@@ -82,7 +82,7 @@ module Content
     end
 
     def destroy_all!
-      all.each{ |i| i.destroy }
+      all(:limit => count).each{ |i| i.destroy }
       nil
     end
 
