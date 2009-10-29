@@ -4,16 +4,45 @@ module Content
   module Adapters
     class TyrantAdapter < Base
       def initialize(options = {})
-        host = options[:host] || options["host"] || "localhost"
-        port = options[:port] || options["port"] || 1978
-        @connection = TokyoTyrant::Table.new(host, port)
-        @logger = ActiveRecord::Base.logger
+        @connections = {}
+        @connections[:writer] = []
+        @connections[:reader] = []
+
+        [options].flatten.each do |opts|
+          opts.symbolize_keys!
+
+          if opts.has_key?(:writer)
+            [opts[:writer]].flatten.each do |conn|
+              @connections[:writer] << create_connection(conn.symbolize_keys)
+            end
+          end
+
+          if opts.has_key?(:reader)
+            [opts[:reader]].flatten.each do |conn|
+              @connections[:reader] << create_connection(conn.symbolize_keys)
+            end
+          end
+
+          unless opts.has_key?(:writer) or opts.has_key?(:reader)
+            connection = create_connection(opts)
+            @connections[:writer] << connection
+            @connections[:reader] << connection
+          end
+        end
+        
+        @connections[:writer].each do |conn|
+          logger.debug "Tyrant Writer: #{conn.server}"
+        end
+        
+        @connections[:reader].each do |conn|
+          logger.debug "Tyrant Reader: #{conn.server}"
+        end
       end
 
       def prepare_query(klass, query_options)
         query_options[:limit] ||= 1000
         query_options[:offset] ||= -1
-        returning @connection.query do |q|
+        returning get_connection.query do |q|
           (query_options[:conditions] || {}).each { |key, value| 
             key = :__id if key == :id
             if value.is_a? Hash
@@ -62,7 +91,7 @@ module Content
         if ids.length > 0
           results = nil
           ms = Benchmark.ms do
-            results = @connection.mget ids
+            results = get_connection.mget ids
           end
           log_select({:conditions => {:id => ids}}, klass, "*", ms)
           ids.collect {|id| results[id.to_s] }
@@ -84,7 +113,7 @@ module Content
       def get_record_by_id(klass, id)
         record = nil
         ms = Benchmark.ms do
-          record = @connection[id]
+          record = get_connection[id]
         end
         log_select({:conditions => {:__id => id, :content_type => klass.name.to_s}}, klass, "*", ms)
         record
@@ -92,7 +121,7 @@ module Content
 
       def save_record(klass, id, attributes)
         ms = Benchmark.ms do
-          @connection[id] = attributes
+          get_connection(:writer)[id] = attributes
         end
         log_update(id, attributes, klass, ms)
         true
@@ -100,15 +129,32 @@ module Content
 
       def delete_record_by_id(klass, id)
         ms = Benchmark.ms do
-          @connection.delete id
+          get_connection(:writer).delete id
         end
         log_delete(id, klass, ms)
         true
       end
 
       def genuid
-        @connection.genuid
+        get_connection(:writer).genuid
       end
+
+      def get_connection(which = :reader)
+        @connections[which].rand
+      end
+
+      def create_connection(conn)
+        host = conn[:host] || "localhost"
+        port = conn[:port] || 1978
+        timeout = (conn[:timeout] || 15).to_f
+        reconnect = conn[:retry] || true
+        TokyoTyrant::Table.new(host, port, timeout, reconnect)
+      end
+
+      def logger
+        ActiveRecord::Base.logger       
+      end
+      
     end
   end
 end

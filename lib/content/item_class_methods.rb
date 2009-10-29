@@ -1,9 +1,9 @@
 module Content
   module ItemClassMethods
-    def establish_connection(options = {})
+    def establish_connection
       conn_options = ::YAML::load_file("#{RAILS_ROOT}/config/content.yml")[::RAILS_ENV]
-      conn_options.merge!(options) unless options.nil?
-      conn_type = conn_options[:type] || conn_options["type"] || :cabinet
+#      conn_type = conn_options[:type] - non-tyrant adapters not supported at the moment
+      conn_type = :tyrant
       $adapter = "content/adapters/#{conn_type}_adapter".camelize.constantize.new(conn_options)
     end
 
@@ -24,7 +24,7 @@ module Content
 
     def human_name(options = {})
       defaults = self_and_descendants_from_active_record.map do |klass|
-        :"#{klass.name.underscore}"
+        :"#{klass.name.gsub('Content::', '').gsub('::', ' ').underscore.humanize}"
       end 
       defaults << name
       defaults.shift.to_s.humanize

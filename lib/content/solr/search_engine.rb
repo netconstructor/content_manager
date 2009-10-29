@@ -1,9 +1,52 @@
 module Content
   module Solr
     class SearchEngine
-      def self.solr
-        @solr_options ||= ::YAML::load_file("#{RAILS_ROOT}/config/solr.yml")[::RAILS_ENV.to_s].symbolize_keys
-        ::RSolr.connect(:url => "http://#{@solr_options[:host] || 'localhost'}" + ":#{@solr_options[:port] || 8983}" + "#{@solr_options[:path] || '/'}")
+      def self.get_connection(which = :reader)
+        @connections ||= begin
+          connections = {}
+          connections[:writer] = []
+          connections[:reader] = []
+
+          [::YAML::load_file("#{RAILS_ROOT}/config/content_solr.yml")[::RAILS_ENV.to_s]].flatten.each do |opts|
+            opts.symbolize_keys!
+
+            if opts.has_key?(:writer)
+              [opts[:writer]].flatten.each do |conn|
+                connections[:writer] << create_connection(conn.symbolize_keys)
+              end
+            end
+
+            if opts.has_key?(:reader)
+              [opts[:reader]].flatten.each do |conn|
+                connections[:reader] << create_connection(conn.symbolize_keys)
+              end
+            end
+
+            unless opts.has_key?(:writer) or opts.has_key?(:reader)
+              connection = create_connection(opts)
+              connections[:writer] << connection
+              connections[:reader] << connection
+            end
+          end
+
+          connections[:writer].each do |conn|
+            logger.debug "Content Solr Writer: #{conn}"
+          end
+
+          connections[:reader].each do |conn|
+            logger.debug "Content Solr Reader: #{conn}"
+          end
+          
+          connections
+        end
+
+        url = @connections[which].rand
+        logger.debug "Solr chose #{url}"
+        ::RSolr.connect(:url => url)
+      end
+      
+      def self.create_connection(options)
+        "http://#{options[:host] || 'localhost'}" + ":#{options[:port] || 8983}" + "#{options[:path] || '/'}"
       end
 
       def self.search(options)
@@ -17,7 +60,7 @@ module Content
           options["facet.field"] = options["facet.field"].split(",").collect {|item| item.strip}
           options["facet.mincount"] = 1
         end
-        SearchResults.new(self.solr.select(options), page, per_page)
+        SearchResults.new(self.get_connection.select(options), page, per_page)
       end
 
       def self.add(item)
@@ -47,12 +90,13 @@ module Content
         end
         values.keys.each {|k| values.delete(k) unless values[k] }
         values[:section_s] = item.parent.heading unless item.parent.nil?
-        values[("random" + item.version).to_sym] = item.version
+        values[:human_name] = item.class.human_name
+        values[:random_i] = (Kernel.rand * 10000).to_i
         values[:text] = item.pages.collect(&:body).join("\n") unless item.pages.nil?
         values[:tags] = item.tags
         begin
 #          pp values
-          self.solr.add(values)
+          self.get_connection(:writer).add(values)
           item.indexed_version = item.version
           item.unversioned_update!
        rescue
@@ -62,19 +106,23 @@ module Content
       end
 
       def self.delete_by_query(query)
-        self.solr.delete_by_query(query)
+        self.get_connection(:writer).delete_by_query(query)
       end
 
       def self.delete_by_id(id)
-        self.solr.delete_by_id(id)
+        self.get_connection(:writer).delete_by_id(id)
       end
 
       def self.commit
-        self.solr.commit
+        self.get_connection(:writer).commit
       end
 
       def self.optimize
-        self.solr.optimize
+        self.get_connection(:writer).optimize
+      end
+      
+      def self.logger
+        ActiveRecord::Base.logger
       end
     end
   end
